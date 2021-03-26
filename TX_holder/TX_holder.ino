@@ -25,15 +25,31 @@ RF24 radio(7, 10); // "создать" модуль на пинах 7 и 10
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 
 byte address[][6] = {"1Node", "2Node", "3Node", "4Node", "5Node", "6Node"}; //возможные номера труб
-int Data[3]; //массив для посылаемых данных [0] - ID датчика (берется из постоянной памяти), [1] - тип датчика , [2] - показания датчика 
-int callbackData[2]; //массив принятых от Базы данных
+byte Data[3]; //массив для посылаемых данных [0] - ID датчика (берется из постоянной памяти), [1] - тип датчика , [2] - показания датчика 
+byte callbackData[2]; //массив принятых от Базы данных
+struct sensorSettings { //Переменная типа struct для зранения данных о датчике
+    byte id;
+    byte type;
+  };
+sensorSettings mySensor;
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 
 void setup() {
-  Data[0]= eeprom_read_byte(0);//ID датчика (изначально (после прошивки или нажатия на кнопку сброса) = 0, после связи с "Базой" - меняется на соотвествующий), забивается в память устройства и в будущем читается из памяти.
-  Data[1]=10; //Тип датчика 
-  Serial.begin(9600); //открываем порт для связи с ПК
-  radioSetup();
+    Serial.begin(9600); //открываем порт для связи с ПК
+    radioSetup();
+    readSensorSettings(mySensor);
+    Data[0]=mySensor.id;
+    Data[1]=mySensor.type;
+    Serial.print("id"); Serial.println(mySensor.id);
+    Serial.print("type"); Serial.println(mySensor.type);
+
+// clearSensorSettings();
+//for(int i =0; i<90; i++){
+//////    clearSensorById(i);
+//////    delay(200);
+//   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
+//   delay(5);
+//  }
 }
 
 void loop() {
@@ -41,10 +57,11 @@ void loop() {
     radio.write(Data, sizeof(Data));
     if (radio.available()){
       radio.read(&callbackData,sizeof(callbackData));
-      Serial.println(callbackData[0]);Serial.println("Пришедший id");
-      Serial.print(eeprom_read_byte(0));Serial.println("Мой id");
-      }
-    delay(500);
+      writeSensorSettings(callbackData[0],callbackData[1]); 
+      readSensorSettings(mySensor);
+      Data[0]=mySensor.id;
+      Data[1]=mySensor.type;
+    }     
 }
 
 void radioSetup(){ //настройка радио модуля 
@@ -61,4 +78,22 @@ void radioSetup(){ //настройка радио модуля
   // при самой низкой скорости имеем самую высокую чувствительность и дальность!!
   radio.powerUp();         // начать работу
   radio.stopListening();   // не слушаем радиоэфир, мы передатчик
+  }
+  
+void clearSensorSettings(){
+    sensorSettings mySensor; //объявление переменной mySensor
+    mySensor.id=0; //задание поля id значение 255 (по дефолту все поля EEPROM =255)
+    mySensor.type=1; //задание поля type значение 255 (по дефолту все поля EEPROM =255)
+    eeprom_write_block((void*)&mySensor, 0, sizeof(mySensor)); //запись переменной mySensor в поле 0. в поле 1 также появится запись (type) поскольку каждая ячейка eeprom хранит только 1 байт информации.
+  }
+  
+void writeSensorSettings(byte id, byte type){
+    sensorSettings mySensor;
+    mySensor.id=id;
+    mySensor.type=type;
+    eeprom_write_block((void*)&mySensor, 0, sizeof(mySensor));
+  }
+  
+void readSensorSettings(sensorSettings& settings){
+    eeprom_read_block((void*)&settings, 0, sizeof(settings));
   }

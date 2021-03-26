@@ -18,33 +18,50 @@
 #include <SPI.h>
 #include "nRF24L01.h"
 #include "RF24.h"
-RF24 radio(9,10); // "создать" модуль на пинах 9 и 10
+RF24 radio(9, 10); // "создать" модуль на пинах 9 и 10
 //--------------------- БИБЛИОТЕКИ ---------------------
 
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
-byte address[][6] = {"1Node","2Node","3Node","4Node","5Node","6Node"};  //возможные номера труб
-int Data[3];         // массив принятых данных
-int callbackData[2]; //массив отправляемых данных
-byte pipeNo;
+byte address[][6] = {"1Node", "2Node", "3Node", "4Node", "5Node", "6Node"}; //возможные номера труб
+byte Data[3];         // массив принятых данных
+byte callbackData[2]; //массив отправляемых данных
+byte pipeNo; //Байтовая переменная хранения номера трубы для отправки
+struct Sensor { //Переменная типа struct для хранения данных о датчике
+  byte id;
+  byte type;
+  byte data;
+};
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 
-void setup(){
+void setup() {
   Serial.begin(9600); //открываем порт для связи с ПК
   radioSetup();
+//  for(int i =0; i<90; i++){
+////    clearSensorById(i);
+////    delay(200);
+//   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
+//   delay(5);
+//  }
+ 
 }
 
-void loop() {                          
-    while( radio.available(&pipeNo)){    // слушаем эфир со всех труб
-      radio.read( &Data, sizeof(Data) );         // чиатем входящий сигнал
-      if (Data[0] == 0){
-        callbackData[0]=1;
-        callbackData[1]=0;
-        radio.writeAckPayload(pipeNo, &callbackData, sizeof(callbackData));    // отправляем пакет телеметрии
-        }
-      Serial.print("Recieved: ID "); Serial.println(Data[0]);
-      Serial.print("Recieved: TYPE "); Serial.println(Data[1]);
-      Serial.print("Recieved: DATA "); Serial.println(Data[2]);
-   }
+void loop() {
+      while( radio.available(&pipeNo)){    // слушаем эфир со всех труб
+        radio.read( &Data, sizeof(Data) );         // чиатем входящий сигнал
+        if (Data[0] == 0){
+          Sensor newSensor;
+          writeNewSensorSettings(Data[1],Data[2],newSensor);
+          callbackData[0]=newSensor.id;
+          callbackData[1]=newSensor.type;
+          for (int i = 0; i <15; i++){
+          radio.writeAckPayload(pipeNo, &callbackData, sizeof(callbackData));
+          delay(250);
+            }
+          }
+        Serial.print("Recieved: ID "); Serial.println(Data[0]);
+        Serial.print("Recieved: TYPE "); Serial.println(Data[1]);
+        Serial.print("Recieved: DATA "); Serial.println(Data[2]);
+     }
 }
 
 void radioSetup() {         // настройка радио модуля
@@ -54,7 +71,7 @@ void radioSetup() {         // настройка радио модуля
   radio.enableAckPayload();    // разрешить отсылку данных в ответ на входящий сигнал
   radio.setPayloadSize(32);    // размер пакета, байт
   radio.openReadingPipe(1, address[0]);   // хотим слушать трубу 0
-  radio.setChannel(CH_NUM);               // выбираем канал 
+  radio.setChannel(CH_NUM);               // выбираем канал
   radio.setPALevel(SIG_POWER);            // уровень мощности передатчика
   radio.setDataRate(SIG_SPEED);           // скорость обмена
   // должна быть одинакова на приёмнике и передатчике!
@@ -63,3 +80,56 @@ void radioSetup() {         // настройка радио модуля
   radio.powerUp();         // начать работу
   radio.startListening();  // начинаем слушать эфир, мы приёмный модуль
 }
+
+bool isItFreeCell(int num) {
+  byte cash = eeprom_read_byte((uint8_t*)num);
+  delay(15);
+  if (cash == 255) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
+void clearSensorById(int id) {
+  for (int i = 0; i < 1000; i= i + 3) 
+  {
+    if (eeprom_read_byte((uint8_t*)i) == id) 
+    {
+      eeprom_write_byte((byte*)i, 255);
+      delay(10);
+      eeprom_write_byte((byte*)i + 1, 255);
+      delay(10);
+      eeprom_write_byte((byte*)i + 2, 255);
+      delay(10);
+      break;
+    }
+  }
+}
+
+void writeNewSensorSettings(byte type, byte data, Sensor& CallbackData) {
+  Sensor mySensor;
+  mySensor.type = type;
+  mySensor.data = data;
+  for (int i = 0; i < 1000; i = i + 3) {
+    if (isItFreeCell(i) == true) {
+      if (i==0){
+         mySensor.id=1;
+        }else {
+         mySensor.id = eeprom_read_byte((uint8_t*)i-3)+1; //Чтение из eeprom 
+          }
+      eeprom_write_block((void*)&mySensor, (int*)i, sizeof(mySensor));
+      eeprom_read_block((void*)&CallbackData, (int*)i, sizeof(CallbackData)); 
+      break;
+    }
+  }
+}
+
+void readSensorSettingsById(Sensor& mySensor, int id){
+    for (int i =0;i<1000;i= i+3){
+       if (eeprom_read_byte((uint8_t*)i) == id) {
+        eeprom_read_block((void*)&mySensor, (int*)i, sizeof(mySensor));
+      }
+    }
+  }
