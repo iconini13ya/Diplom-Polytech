@@ -36,7 +36,8 @@ struct Sensor { //Переменная типа struct для хранения �
 void setup() {
   Serial.begin(9600); //открываем порт для связи с ПК
   radioSetup();
-//  for(int i =0; i<90; i++){
+//  for(int i =0; i<60; i++){
+////    writeNewSensorSettings(0,1,mySensor);
 ////    clearSensorById(i);
 ////    delay(200);
 //   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
@@ -53,15 +54,14 @@ void loop() {
           writeNewSensorSettings(Data[1],Data[2],newSensor);
           callbackData[0]=newSensor.id;
           callbackData[1]=newSensor.type;
-          for (int i = 0; i <15; i++){
           radio.writeAckPayload(pipeNo, &callbackData, sizeof(callbackData));
-          delay(250);
-            }
+          delay(500);
           }
         Serial.print("Recieved: ID "); Serial.println(Data[0]);
         Serial.print("Recieved: TYPE "); Serial.println(Data[1]);
         Serial.print("Recieved: DATA "); Serial.println(Data[2]);
      }
+     
 }
 
 void radioSetup() {         // настройка радио модуля
@@ -82,12 +82,17 @@ void radioSetup() {         // настройка радио модуля
 }
 
 bool isItFreeCell(int num) {
+//  Serial.print("isItFreeCell() <-"); Serial.println(num) ;
   byte cash = eeprom_read_byte((uint8_t*)num);
+//  Serial.print("Что находится в ячейке num"); Serial.println(cash) ;
   delay(15);
+//  Serial.print(cash); Serial.print(" = "); Serial.print(cash); Serial.println(" ?") ;
   if (cash == 255) {
+//    Serial.println(" Да") ;
     return true;
   }
   else {
+//    Serial.println(" Нет") ;
     return false;
   }
 }
@@ -97,6 +102,7 @@ void clearSensorById(int id) {
   {
     if (eeprom_read_byte((uint8_t*)i) == id) 
     {
+      delay(10);
       eeprom_write_byte((byte*)i, 255);
       delay(10);
       eeprom_write_byte((byte*)i + 1, 255);
@@ -113,12 +119,16 @@ void writeNewSensorSettings(byte type, byte data, Sensor& CallbackData) {
   mySensor.type = type;
   mySensor.data = data;
   for (int i = 0; i < 1000; i = i + 3) {
+//    Serial.print("i= "); Serial.println(i) ;
     if (isItFreeCell(i) == true) {
+      delay(500);
       if (i==0){
          mySensor.id=1;
         }else {
          mySensor.id = eeprom_read_byte((uint8_t*)i-3)+1; //Чтение из eeprom 
           }
+//      Serial.print("Старый id = "); Serial.println(mySensor.id);
+//        Serial.print("Новый id = "); Serial.println(eeprom_read_byte((uint8_t*)i-3)) ;
       eeprom_write_block((void*)&mySensor, (int*)i, sizeof(mySensor));
       eeprom_read_block((void*)&CallbackData, (int*)i, sizeof(CallbackData)); 
       break;

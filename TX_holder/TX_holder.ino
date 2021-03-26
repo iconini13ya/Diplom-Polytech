@@ -61,6 +61,8 @@ void loop() {
       readSensorSettings(mySensor);
       Data[0]=mySensor.id;
       Data[1]=mySensor.type;
+      Serial.print("id"); Serial.println(callbackData[0]);
+      Serial.print("type"); Serial.println(callbackData[1]);
     }     
 }
 
