@@ -47,8 +47,10 @@ void setup() {
 }
 
 void loop() {
-      while( radio.available(&pipeNo)){    // слушаем эфир со всех труб
-        radio.read( &Data, sizeof(Data) );         // чиатем входящий сигнал
+      while( radio.available(&pipeNo)){  
+        Serial.print("Ушел на прослушку");// слушаем эфир со всех труб
+        radio.read( &Data, sizeof(Data) ); 
+         Serial.print("Принял");// чиатем входящий сигнал
         if (Data[0] == 0){
           Sensor newSensor;
           writeNewSensorSettings(Data[1],Data[2],newSensor);

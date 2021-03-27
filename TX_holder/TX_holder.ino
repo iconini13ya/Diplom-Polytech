@@ -40,13 +40,16 @@ void setup() {
     readSensorSettings(mySensor);
     Data[0]=mySensor.id;
     Data[1]=mySensor.type;
-    Serial.print("id"); Serial.println(mySensor.id);
-    Serial.print("type"); Serial.println(mySensor.type);
+//    if(Data[0] == 0)
+//    {
+//     registrateSensor(); 
+//    }
+//    Serial.print("id"); Serial.println(mySensor.id);
+//    Serial.print("type"); Serial.println(mySensor.type);
 
 // clearSensorSettings();
 //for(int i =0; i<90; i++){
-//////    clearSensorById(i);
-//////    delay(200);
+//
 //   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
 //   delay(5);
 //  }
@@ -55,15 +58,8 @@ void setup() {
 void loop() {
     Data[2]=25;
     radio.write(Data, sizeof(Data));
-    if (radio.available()){
-      radio.read(&callbackData,sizeof(callbackData));
-      writeSensorSettings(callbackData[0],callbackData[1]); 
-      readSensorSettings(mySensor);
-      Data[0]=mySensor.id;
-      Data[1]=mySensor.type;
-      Serial.print("id"); Serial.println(callbackData[0]);
-      Serial.print("type"); Serial.println(callbackData[1]);
-    }     
+    Serial.println("Отправил");
+    delay(100);     
 }
 
 void radioSetup(){ //настройка радио модуля 
@@ -99,3 +95,26 @@ void writeSensorSettings(byte id, byte type){
 void readSensorSettings(sensorSettings& settings){
     eeprom_read_block((void*)&settings, 0, sizeof(settings));
   }
+
+//void registrateSensor(){
+//  bool flag=true;
+//  Data[2]=0;
+//  radio.write(Data, sizeof(Data));
+//  if (radio.available())
+//  {
+//    while(flag == true)
+//    {
+//      radio.read(&callbackData,sizeof(callbackData));
+//      if (callbackData[0] != 0)
+//      {
+//        writeSensorSettings(callbackData[0],callbackData[1]); 
+//        readSensorSettings(mySensor);
+//        Data[0]=mySensor.id;
+//        Data[1]=mySensor.type;
+//        Serial.print("id"); Serial.println(callbackData[0]);
+//        Serial.print("type"); Serial.println(callbackData[1]);
+//        flag =false;
+//      }
+//    }
+//  } 
+//}
