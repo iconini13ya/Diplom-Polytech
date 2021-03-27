@@ -75,6 +75,7 @@ void radioSetup() {         // настройка радио модуля
   radio.setAutoAck(1);         // режим подтверждения приёма, 1 вкл 0 выкл
   radio.setRetries(0, 15);     // (время между попыткой достучаться, число попыток)
   radio.enableAckPayload();    // разрешить отсылку данных в ответ на входящий сигнал
+  radio.enableDynamicPayloads();
   radio.setPayloadSize(32);    // размер пакета, байт
   radio.openReadingPipe(1, address[0]);   // хотим слушать трубу 0
   radio.setChannel(CH_NUM);               // выбираем канал
