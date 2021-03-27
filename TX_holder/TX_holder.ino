@@ -40,12 +40,13 @@ void setup() {
     readSensorSettings(mySensor);
     Data[0]=mySensor.id;
     Data[1]=mySensor.type;
-//    if(Data[0] == 0)
-//    {
-//     registrateSensor(); 
-//    }
-//    Serial.print("id"); Serial.println(mySensor.id);
-//    Serial.print("type"); Serial.println(mySensor.type);
+    if(Data[0] == 0)
+    {
+     Serial.println("Ушел на nрегистрацию"); 
+     registrateSensor(); 
+    }
+    Serial.print("id"); Serial.println(mySensor.id);
+    Serial.print("type"); Serial.println(mySensor.type);
 
 // clearSensorSettings();
 //for(int i =0; i<90; i++){
@@ -56,10 +57,9 @@ void setup() {
 }
 
 void loop() {
-    Data[2]=25;
-    radio.write(Data, sizeof(Data));
-    Serial.println("Отправил");
-    delay(100);     
+//    Data[2]=25;
+//    radio.write(Data, sizeof(Data));
+//    delay(100);     
 }
 
 void radioSetup(){ //настройка радио модуля 
@@ -96,25 +96,30 @@ void readSensorSettings(sensorSettings& settings){
     eeprom_read_block((void*)&settings, 0, sizeof(settings));
   }
 
-//void registrateSensor(){
-//  bool flag=true;
-//  Data[2]=0;
-//  radio.write(Data, sizeof(Data));
-//  if (radio.available())
-//  {
-//    while(flag == true)
-//    {
-//      radio.read(&callbackData,sizeof(callbackData));
-//      if (callbackData[0] != 0)
-//      {
-//        writeSensorSettings(callbackData[0],callbackData[1]); 
-//        readSensorSettings(mySensor);
-//        Data[0]=mySensor.id;
-//        Data[1]=mySensor.type;
-//        Serial.print("id"); Serial.println(callbackData[0]);
-//        Serial.print("type"); Serial.println(callbackData[1]);
-//        flag =false;
-//      }
-//    }
-//  } 
-//}
+void registrateSensor(){
+  bool flag = true;
+  Data[2]=0;
+  radio.write(Data, sizeof(Data));
+  Serial.println("Ушел на регистрацию"); 
+  Serial.println("Отпраил данные"); 
+  while(flag == true)
+    {
+    Serial.println("Проверяю,пришли ли данные");
+    if (radio.available())
+    {
+      Serial.println("Данные пришли");
+      radio.read(&callbackData,sizeof(callbackData));
+      Serial.print("id"); Serial.println(callbackData[0]);
+      Serial.print("type"); Serial.println(callbackData[1]);
+      if (callbackData[0] != 0)
+      {
+        Serial.println("Пишу в EEPROM");
+        writeSensorSettings(callbackData[0],callbackData[1]); 
+        readSensorSettings(mySensor);
+        Data[0]=mySensor.id;
+        Data[1]=mySensor.type;
+        flag =false;
+      }
+    }
+  } 
+}
