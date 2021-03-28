@@ -19,14 +19,14 @@
 #include "nRF24L01.h"     // библиотека радиомодуля
 #include "RF24.h"         // ещё библиотека радиомодуля
 #include <avr/eeprom.h> //Библиотека хранения данных внутри Arduino
-RF24 radio(7, 10); // "создать" модуль на пинах 7 и 10 
+RF24 radio(9, 10); // "создать" модуль на пинах 7 и 10 
 //--------------------- БИБЛИОТЕКИ ----------------------
 
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 
 byte address[][6] = {"1Node", "2Node", "3Node", "4Node", "5Node", "6Node"}; //возможные номера труб
 byte Data[3]; //массив для посылаемых данных [0] - ID датчика (берется из постоянной памяти), [1] - тип датчика , [2] - показания датчика 
-byte callbackData[2]; //массив принятых от Базы данных
+byte callbackData[1]; //массив принятых от Базы данных
 struct sensorSettings { //Переменная типа struct для зранения данных о датчике
     byte id;
     byte type;
@@ -40,13 +40,37 @@ void setup() {
     readSensorSettings(mySensor);
     Data[0]=mySensor.id;
     Data[1]=mySensor.type;
+    Data[2]=0;
     if(Data[0] == 0)
     {
-     Serial.println("Ушел на nрегистрацию"); 
-     registrateSensor(); 
+      Serial.println("Ушел на регистрацию");
+      bool cash;
+      radio.write(Data, sizeof(Data));
+      while(true)
+      {
+        Serial.println("Пытаюсь читать");
+        if( radio.available())
+        {                       // Если в буфере имеются принятые данные из пакета подтверждения приёма, то ...
+          Serial.println("Пришел ответ");
+          radio.read(&callbackData, sizeof(callbackData));                 // Читаем данные из буфера в массив ackData указывая сколько всего байт может поместиться в массив.
+          writeSensorSettings(callbackData[0],Data[1]);
+          readSensorSettings(mySensor);
+          Data[0]=mySensor.id;
+          Data[1]=mySensor.type;
+          Serial.print("Новый id"); Serial.println(mySensor.id);
+          Serial.print("Новый type"); Serial.println(mySensor.type);
+          break;
+        }
+      }
     }
-    Serial.print("id"); Serial.println(mySensor.id);
-    Serial.print("type"); Serial.println(mySensor.type);
+
+//    if(Data[0] == 0)
+//    {
+//     Serial.println("Ушел на nрегистрацию"); 
+//    
+//    }
+//    Serial.print("id"); Serial.println(mySensor.id);
+//    Serial.print("type"); Serial.println(mySensor.type);
 
 // clearSensorSettings();
 //for(int i =0; i<90; i++){
@@ -54,9 +78,18 @@ void setup() {
 //   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
 //   delay(5);
 //  }
+  
 }
 
 void loop() {
+//    radio.write(&Data, sizeof(Data));                      // Отправляем данные из массива myData указывая сколько байт массива мы хотим отправить.
+//    if( radio.isAckPayloadAvailable() ){                       // Если в буфере имеются принятые данные из пакета подтверждения приёма, то ...
+//        Serial.println("Пришла ответочка");
+//        radio.read(&callbackData, sizeof(callbackData));                 // Читаем данные из буфера в массив ackData указывая сколько всего байт может поместиться в массив.
+//        writeSensorSettings(callbackData[0],Data[1]);
+//        Data[0]=callbackData[0];
+//        Serial.print("Новый id"); Serial.println(callbackData[0]);
+//    }    
 //    Data[2]=25;
 //    radio.write(Data, sizeof(Data));
 //    delay(100);     
@@ -67,7 +100,7 @@ void radioSetup(){ //настройка радио модуля
   radio.setAutoAck(1);//режим подтверждения приёма, 1 вкл 0 выкл
   radio.setRetries(0, 15);//(время между попыткой достучаться, число попыток)
   radio.enableAckPayload();    //разрешить отсылку данных в ответ на входящий сигнал
-  radio.enableDynamicPayloads();
+//  radio.enableDynamicPayloads();
   radio.setPayloadSize(32);     //размер пакета, в байтах
   radio.openWritingPipe(address[0]);   //мы - труба 0, открываем канал для передачи данных
   radio.setChannel(CH_NUM);  //выбираем канал для связи
@@ -96,31 +129,3 @@ void writeSensorSettings(byte id, byte type){
 void readSensorSettings(sensorSettings& settings){
     eeprom_read_block((void*)&settings, 0, sizeof(settings));
   }
-
-void registrateSensor(){
-  bool flag = true;
-  Data[2]=0;
-  radio.write(Data, sizeof(Data));
-  Serial.println("Ушел на регистрацию"); 
-  Serial.println("Отпраил данные"); 
-  while(flag == true)
-    {
-    Serial.println("Проверяю,пришли ли данные");
-    if (radio.available())
-    {
-      Serial.println("Данные пришли");
-      radio.read(&callbackData,sizeof(callbackData));
-      Serial.print("id"); Serial.println(callbackData[0]);
-      Serial.print("type"); Serial.println(callbackData[1]);
-      if (callbackData[0] != 0)
-      {
-        Serial.println("Пишу в EEPROM");
-        writeSensorSettings(callbackData[0],callbackData[1]); 
-        readSensorSettings(mySensor);
-        Data[0]=mySensor.id;
-        Data[1]=mySensor.type;
-        flag =false;
-      }
-    }
-  } 
-}

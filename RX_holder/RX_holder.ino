@@ -23,20 +23,45 @@ RF24 radio(9, 10); // "создать" модуль на пинах 9 и 10
 
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 byte address[][6] = {"1Node", "2Node", "3Node", "4Node", "5Node", "6Node"}; //возможные номера труб
-byte Data[3];         // массив принятых данных
-byte callbackData[2]; //массив отправляемых данных
+byte callbackData[3];         // массив принятых данных
+byte Data[1]; //массив отправляемых данных
 byte pipeNo; //Байтовая переменная хранения номера трубы для отправки
 struct Sensor { //Переменная типа struct для хранения данных о датчике
   byte id;
   byte type;
   byte data;
 };
+Sensor cashDataToSend;
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 
 void setup() {
   Serial.begin(9600); //открываем порт для связи с ПК
   radioSetup();
-//  for(int i =0; i<60; i++){
+  Serial.println("Ушел на просмотр свободных id");
+  for (int i=0; i<1000; i=i+3){
+    readSensorSettingsById(i,cashDataToSend);
+    if (cashDataToSend.type == 0 && cashDataToSend.data == 0){
+      Data[0]= cashDataToSend.id;
+      Serial.print("Есть свободный id "); Serial.println(cashDataToSend.id);
+//       Serial.print("id "); Serial.println(cashDataToSend.id);
+//        Serial.print("type "); Serial.println(cashDataToSend.type);
+      radio.writeAckPayload(pipeNo, &Data, sizeof(Data));
+      break;
+      }else{
+        Serial.println("Нет свободных id, щас создам");
+        writeNewSensorSettings(0,0,cashDataToSend);
+        Data[0]=cashDataToSend.id;
+        Serial.print("Создан свободный id "); Serial.println(cashDataToSend.id);
+        radio.writeAckPayload(pipeNo, &Data, sizeof(Data));
+        break;
+        }
+    }
+    
+//  readSensorSettingsById(10,cash);
+//  Serial.print("Recieved: ID "); Serial.println(cash.id);
+//  Serial.print("Recieved: TYPE "); Serial.println(cash.type);
+//  Serial.print("Recieved: DATA "); Serial.println(cash.data);
+//  for(int i =0; i<500; i++){
 ////    writeNewSensorSettings(0,1,mySensor);
 //    clearSensorById(i);
 ////    delay(200);
@@ -47,26 +72,42 @@ void setup() {
 }
 
 void loop() {
-      while( radio.available(&pipeNo)){  
-        Serial.print("Ушел на прослушку");// слушаем эфир со всех труб
-        radio.read( &Data, sizeof(Data) ); 
-         Serial.print("Принял");// чиатем входящий сигнал
-        if (Data[0] == 0){
-          Sensor newSensor;
-          writeNewSensorSettings(Data[1],Data[2],newSensor);
-          callbackData[0]=newSensor.id;
-          callbackData[1]=newSensor.type;
-          Serial.print("Отправил инфу на датчик");
-          radio.writeAckPayload(pipeNo, &callbackData, sizeof(callbackData));
-          Serial.print("Отправиляю"); Serial.print(callbackData[0]); Serial.println(callbackData[1]);
-          }
-        Serial.print("SEND: ID "); Serial.println(callbackData[0]);
-        Serial.print("SEND: TYPE "); Serial.println(callbackData[1]);
-  
-        Serial.print("Recieved: ID "); Serial.println(Data[0]);
-        Serial.print("Recieved: TYPE "); Serial.println(Data[1]);
-        Serial.print("Recieved: DATA "); Serial.println(Data[2]);
-     }
+        if(radio.available()){                                     // Если в буфере приёма имеются принятые данные от передатчика, то ...
+        Serial.println("Пришло новое сообщение");
+        radio.read(&callbackData,sizeof(callbackData)); // Читаем данные из буфера приёма в массив myData указывая сколько всего байт может поместиться в массив.
+        Serial.println("Прочитал новое сообщение");
+        if(callbackData[0] == 0){
+          Serial.println("Это новенький");
+          Serial.println("Щас создам новый ID в цикле");
+          writeNewSensorSettings(0,0,cashDataToSend);
+          Data[0]=cashDataToSend.id;
+          Serial.print("Создан свободный id "); Serial.println(cashDataToSend.id);
+          Serial.println("Новый id ушел в буфер");
+          delay(500);
+          radio.writeAckPayload (1,&Data, sizeof(Data)); // Помещаем данные всего массива ackData в буфер FIFO для их отправки на следующее получение данных от передатчика на 1 трубе.
+          }   
+        }  
+
+//      while( radio.available(&pipeNo)){  
+//        Serial.print("Ушел на прослушку");// слушаем эфир со всех труб
+//        radio.read( &Data, sizeof(Data) ); 
+//         Serial.print("Принял");// чиатем входящий сигнал
+//        if (Data[0] == 0){
+//          Sensor newSensor;
+//          writeNewSensorSettings(Data[1],Data[2],newSensor);
+//          callbackData[0]=newSensor.id;
+//          callbackData[1]=newSensor.type;
+//          Serial.print("Отправил инфу на датчик");
+//          radio.writeAckPayload(pipeNo, &callbackData, sizeof(callbackData));
+//          Serial.print("Отправиляю"); Serial.print(callbackData[0]); Serial.println(callbackData[1]);
+//          }
+//        Serial.print("SEND: ID "); Serial.println(callbackData[0]);
+//        Serial.print("SEND: TYPE "); Serial.println(callbackData[1]);
+//  
+//        Serial.print("Recieved: ID "); Serial.println(Data[0]);
+//        Serial.print("Recieved: TYPE "); Serial.println(Data[1]);
+//        Serial.print("Recieved: DATA "); Serial.println(Data[2]);
+//     }
      
 }
 
@@ -75,7 +116,7 @@ void radioSetup() {         // настройка радио модуля
   radio.setAutoAck(1);         // режим подтверждения приёма, 1 вкл 0 выкл
   radio.setRetries(0, 15);     // (время между попыткой достучаться, число попыток)
   radio.enableAckPayload();    // разрешить отсылку данных в ответ на входящий сигнал
-  radio.enableDynamicPayloads();
+//  radio.enableDynamicPayloads();
   radio.setPayloadSize(32);    // размер пакета, байт
   radio.openReadingPipe(1, address[0]);   // хотим слушать трубу 0
   radio.setChannel(CH_NUM);               // выбираем канал
@@ -143,10 +184,10 @@ void writeNewSensorSettings(byte type, byte data, Sensor& CallbackData) {
   }
 }
 
-void readSensorSettingsById(Sensor& mySensor, int id){
+void readSensorSettingsById(int id,Sensor& callbackData){
     for (int i =0;i<1000;i= i+3){
        if (eeprom_read_byte((uint8_t*)i) == id) {
-        eeprom_read_block((void*)&mySensor, (int*)i, sizeof(mySensor));
+        eeprom_read_block((void*)&callbackData, (int*)i, sizeof(callbackData));
       }
     }
   }
