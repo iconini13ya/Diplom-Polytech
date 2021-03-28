@@ -26,7 +26,7 @@ RF24 radio(9, 10); // "создать" модуль на пинах 7 и 10
 
 byte address[][6] = {"1Node", "2Node", "3Node", "4Node", "5Node", "6Node"}; //возможные номера труб
 byte Data[3]; //массив для посылаемых данных [0] - ID датчика (берется из постоянной памяти), [1] - тип датчика , [2] - показания датчика 
-byte callbackData[1]; //массив принятых от Базы данных
+byte callbackData[4]; //массив принятых от Базы данных
 struct sensorSettings { //Переменная типа struct для зранения данных о датчике
     byte id;
     byte type;
@@ -41,26 +41,31 @@ void setup() {
     Data[0]=mySensor.id;
     Data[1]=mySensor.type;
     Data[2]=0;
+    Serial.println("Уел на регистрацию");
     if(Data[0] == 0)
     {
-      Serial.println("Ушел на регистрацию");
-      bool cash;
-      radio.write(Data, sizeof(Data));
-      while(true)
-      {
-        Serial.println("Пытаюсь читать");
-        if( radio.available())
-        {                       // Если в буфере имеются принятые данные из пакета подтверждения приёма, то ...
-          Serial.println("Пришел ответ");
-          radio.read(&callbackData, sizeof(callbackData));                 // Читаем данные из буфера в массив ackData указывая сколько всего байт может поместиться в массив.
-          writeSensorSettings(callbackData[0],Data[1]);
-          readSensorSettings(mySensor);
-          Data[0]=mySensor.id;
-          Data[1]=mySensor.type;
-          Serial.print("Новый id"); Serial.println(mySensor.id);
-          Serial.print("Новый type"); Serial.println(mySensor.type);
-          break;
+      while(radio.write(Data, sizeof(Data)) == false){
+         Serial.println("Пишу");
+         delay(50);
         }
+      Serial.println("Начинаю слушать");
+      radio.startListening();
+      while(true){
+        if( radio.available() ){// Если в буфере имеются принятые данные, то ...
+        Serial.println("Читаю приходящую инфу");
+        radio.read(&callbackData, sizeof(callbackData));       // Читаем данные из буфера в массив myData указывая сколько всего байт может поместиться в массив.
+        if(callbackData[0]== Data[0] && callbackData[1]== Data[1]){
+          Serial.println("О, это все мне ?");
+          writeSensorSettings(callbackData[2],callbackData[3]);
+          Data[0]=callbackData[2];
+          Data[1]=callbackData[3];
+          Serial.print("Новый id"); Serial.println(Data[0]);
+          Serial.print("Новый type"); Serial.println( Data[1]);
+          radio.stopListening();
+          Serial.println("Перестал слушать");
+          break; 
+          }
+        } 
       }
     }
 
@@ -82,27 +87,17 @@ void setup() {
 }
 
 void loop() {
-//    radio.write(&Data, sizeof(Data));                      // Отправляем данные из массива myData указывая сколько байт массива мы хотим отправить.
-//    if( radio.isAckPayloadAvailable() ){                       // Если в буфере имеются принятые данные из пакета подтверждения приёма, то ...
-//        Serial.println("Пришла ответочка");
-//        radio.read(&callbackData, sizeof(callbackData));                 // Читаем данные из буфера в массив ackData указывая сколько всего байт может поместиться в массив.
-//        writeSensorSettings(callbackData[0],Data[1]);
-//        Data[0]=callbackData[0];
-//        Serial.print("Новый id"); Serial.println(callbackData[0]);
-//    }    
-//    Data[2]=25;
-//    radio.write(Data, sizeof(Data));
-//    delay(100);     
+  Serial.print("Новый id в цикле"); Serial.println(Data[0]);
+  Serial.print("Новый type в цикле"); Serial.println( Data[1]);
 }
 
 void radioSetup(){ //настройка радио модуля 
   radio.begin(); //активировать модуль
   radio.setAutoAck(1);//режим подтверждения приёма, 1 вкл 0 выкл
   radio.setRetries(0, 15);//(время между попыткой достучаться, число попыток)
-  radio.enableAckPayload();    //разрешить отсылку данных в ответ на входящий сигнал
-//  radio.enableDynamicPayloads();
   radio.setPayloadSize(32);     //размер пакета, в байтах
   radio.openWritingPipe(address[0]);   //мы - труба 0, открываем канал для передачи данных
+  radio.openReadingPipe(1, address[1]);
   radio.setChannel(CH_NUM);  //выбираем канал для связи
   radio.setPALevel (SIG_POWER); //уровень мощности передатчика. На выбор RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
   radio.setDataRate(SIG_SPEED); // скорость обмена
