@@ -19,6 +19,8 @@
 #include "nRF24L01.h"
 #include "RF24.h"
 RF24 radio(9, 10); // "создать" модуль на пинах 9 и 10
+#include "SoftwareSerial.h" //библиотека для создания сериал порта на любом пине
+SoftwareSerial SIM800(2,3);   
 //--------------------- БИБЛИОТЕКИ ---------------------
 
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
@@ -36,6 +38,8 @@ Sensor cashDataToSend;
 
 void setup() {
   Serial.begin(9600); //открываем порт для связи с ПК
+  SIM800.begin(19200);  //Скорость порта для связи Arduino с GSM модемом    
+  SIM800.println("AT");  
   radioSetup();
 
 
@@ -51,6 +55,10 @@ void setup() {
 }
 
 void loop() {
+ if (SIM800.available())           // Ожидаем прихода данных (ответа) от модема...
+    Serial.write(SIM800.read());    // ...и выводим их в Serial
+ if (Serial.available())           // Ожидаем команды по Serial...
+    SIM800.write(Serial.read());    // ...и отправляем полученную команду модему 
  if(radio.available()){
   Serial.println("Читаю");
   radio.read(&callbackData, sizeof(callbackData));
