@@ -38,11 +38,9 @@ Sensor cashDataToSend;
 
 void setup() {
   Serial.begin(9600); //открываем порт для связи с ПК
-  SIM800.begin(19200);  //Скорость порта для связи Arduino с GSM модемом    
-  SIM800.println("AT");  
   radioSetup();
-
-
+  simSetup();
+//  sendSMS("+79520534351","Hi,this is the ansver from arduino");
 
 //  for(int i =0; i<500; i++){
 ////    writeNewSensorSettings(0,1,mySensor);
@@ -100,6 +98,26 @@ void radioSetup() {         // настройка радио модуля
 
   radio.powerUp();         // начать работу
   radio.startListening();  // начинаем слушать эфир, мы приёмный модуль
+}
+
+void simSetup(){
+  SIM800.begin(19200);  //Скорость порта для связи Arduino с GSM модемом    
+  delay(100);
+  SIM800.println("AT");  
+  delay(100);
+  SIM800.println("AT+CMGF=1"); 
+  }
+
+  void sendSMS(String phone,String message) // Некорректный пример
+{
+  SIM800.println("AT+CMGS=\"" + phone + "\"");  // Задаем номер телефона адресата
+  delay(100);
+  SIM800.println(message);          // Вводим сообщение
+  delay(100);
+  SIM800.println((char)26);         // Уведомляем GSM-модуль об окончании ввода
+  delay(100);
+  SIM800.println();
+  delay(4000);                      // Ожидаем отправки
 }
 
 bool isItFreeCell(int num) {
