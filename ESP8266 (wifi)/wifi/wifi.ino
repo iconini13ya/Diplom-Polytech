@@ -1,30 +1,29 @@
 #include <ESP8266WiFi.h>                                // Подключаем библиотеку ESP8266WiFi
-#include <ESP8266WebServer.h>                                    // Подключаем библиотеку Wire
+#include <ESP8266WebServer.h>                           // Подключаем библиотеку Wire
  
-const char* ssid = "MyESP";               // Название Вашей WiFi сети
+const char* ssid = "MyESP";                             // Название Моей создаваемой WiFi сети
 
-ESP8266WebServer HTTP(80);                                  // Указываем порт Web-сервера
- 
+ESP8266WebServer HTTP(80);                              // Указываем порт Web-сервера (80) по дефолту
+
+int pinmode=0;
 void setup() 
 {
-  Serial.begin(9600);                                 // Скорость передачи 115200 
-  delay(10);                                            // Пауза 10 мкс
-  WiFi.softAP(ssid);                           // Подключение к WiFi Сети
-  HTTP.begin();
+  Serial.begin(9600);                                   // Скорость передачи 9600 (дефолт) 
+  delay(10);                
+  WiFi.softAP(ssid);                                    // Создание точки WiFi с названием ssid
+  HTTP.begin();                                         // Создание веб сервера на 80 порту
 
-  Serial.println("My ip adress");
+  Serial.println("My ip adress");                       //Вывод ip адреса для подключения по федолту (192.168.4.1)
   Serial.println(WiFi.softAPIP());
   
-  HTTP.on("/",[](){
-    HTTP.send(200,"text/plain","Hi");
-    });               // Печатаем полученный IP-адрес ESP
+  HTTP.on("/changeDiodStatus",[](){
+    Serial.print(!pinmode);
+    pinmode=!pinmode;
+    HTTP.send(200,"text/plain","Status changed");
+    });              
 }
  
 void loop() 
 {
-Serial.write(1);
-delay(2000);
-Serial.write(0);
-delay(2000);
 HTTP.handleClient();
 }
