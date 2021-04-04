@@ -5,7 +5,7 @@ const char* ssid = "MyESP";                             // Название Мо
 
 ESP8266WebServer HTTP(80);                              // Указываем порт Web-сервера (80) по дефолту
 
-int pinmode=0;
+int pinmode=1;
 void setup() 
 {
   Serial.begin(9600);                                   // Скорость передачи 9600 (дефолт) 
@@ -17,8 +17,12 @@ void setup()
   Serial.println(WiFi.softAPIP());
   
   HTTP.on("/changeDiodStatus",[](){
-    Serial.print(!pinmode);
-    pinmode=!pinmode;
+    if(pinmode==1){
+      pinmode=2;
+      }else{
+        pinmode=1;
+        }
+    Serial.print(pinmode);
     HTTP.send(200,"text/plain","Status changed");
     });              
 }

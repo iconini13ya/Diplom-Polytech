@@ -69,13 +69,7 @@ void setup() {
       }
     }
 
-//    if(Data[0] == 0)
-//    {
-//     Serial.println("Ушел на nрегистрацию"); 
-//    
-//    }
-//    Serial.print("id"); Serial.println(mySensor.id);
-//    Serial.print("type"); Serial.println(mySensor.type);
+
 
 // clearSensorSettings();
 //for(int i =0; i<90; i++){
