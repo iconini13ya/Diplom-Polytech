@@ -38,40 +38,28 @@ void setup() {
   simSetup();            //ф-я настройки модуля sim800L
 
 
-//  for(int i =0; i<54; i++){
+//  for(int i =0; i<200; i++){
 ////    writeNewSensorSettings(0,1,mySensor);
-////    clearSensorById(i);
+//    clearSensorById(i);
 ////    delay(200);
 //   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
 //   delay(5);
 //  }
 
 }
+
+int bustatus;
 void loop() {
  
-// if(radio.available()){
-//  Serial.println("Читаю");
-//  radio.read(&callbackData, sizeof(callbackData));
-//  if(callbackData[0]==0){
-//    Serial.println("Новенький");
-//    radio.stopListening();
-//    Serial.println("Перестал читать");
-//    writeNewSensorSettings(callbackData[1],callbackData[2],cashDataToSend);
-//    Data[0]= callbackData[0];
-//    Data[1]= callbackData[1];
-//    Data[2]= cashDataToSend.id;
-//    Data[3]= cashDataToSend.type;
-//    Serial.print("Новый id"); Serial.println(Data[2]);
-//    Serial.print("Новый type"); Serial.println( Data[3]);
-//    while(radio.write(Data, sizeof(Data)) == false){
-//      Serial.println("Пишу");
-//      delay(50);
-//      }
-//    Serial.println("Отправил");  
-//    radio.startListening();
-//    Serial.println("Начинаю слушать");
-//    }
-//  }  
+ if(radio.available()){
+  Serial.println("Что-то пришло ,читаю");
+  radio.read(&callbackData, sizeof(callbackData));
+  if(callbackData[0]==0 && callbackData[1]!= 0){
+    registerNewSensor();
+  }  
+}
+
+
 //
 //  if(Serial.available()){
 //    bustatus=Serial.parseInt();
@@ -79,11 +67,9 @@ void loop() {
 //    switch(bustatus){
 //      case 2:
 //        Serial.print("Я на лоу");
-//        digitalWrite(4,LOW);
 //        break;
 //      case 1:
 //        Serial.print("Я на хай");
-//        digitalWrite(4,HIGH);
 //        break;
 //      }
 //    }
@@ -117,6 +103,43 @@ void sendSMS(String phone, String message)                      //ф-я отпр
 {
   sendATCommand("AT+CMGS=\"" + phone + "\"", true);             // Переходим в режим ввода текстового сообщения
   sendATCommand(message + "\r\n" + (String)((char)26), true);   // После текста отправляем перенос строки и Ctrl+Z
+}
+
+void registerNewSensor(){
+    Serial.println("Новенький");
+    radio.stopListening();
+    Serial.println("Перестал читать");
+    writeNewSensorSettings(callbackData[1],callbackData[2],cashDataToSend);
+    Data[0]= callbackData[0];
+    Data[1]= callbackData[1];
+    Data[2]= cashDataToSend.id;
+    Data[3]= cashDataToSend.type;
+    Serial.print("Новый id"); Serial.println(Data[2]);
+    Serial.print("Новый type"); Serial.println( Data[3]);
+    if (waitRadioResponse()){
+          Serial.println("Отправил, удачная регистрация");  
+          radio.startListening();
+          Serial.println("Начинаю слушать");
+      }else{
+          clearSensorById(Data[2]);
+          Serial.println("Нет ответа, освободил id");  
+          radio.startListening();
+          Serial.println("Начинаю слушать");
+        }
+  }
+
+bool waitRadioResponse(){
+  bool _resp=false;
+  long _timeout = millis() + 2000;                                             // Переменная для отслеживания таймаута (10 секунд)
+  while (!_resp &&  millis() < _timeout)  {
+    _resp = radio.write(Data, sizeof(Data));
+    };                                                                         // Ждем ответа или выжидаем таймаут в 2 секунды
+  if (_resp) {                                                     // Если есть, что считывать...
+    return true;                                                               // ... считываем и запоминаем
+  }
+  else {                                                                       // Если пришел таймаут, то...
+    return false;                                                              // ... оповещаем об этом и...
+  }  
 }
 
 bool isItFreeCell(int num) {                    //ф-я проверки клетки eeprom на пустоту
@@ -214,7 +237,7 @@ void writeAddPhone(long phomeNumber){           //ф-я записи втори�
 String waitResponse() {                                           // Функция ожидания ответа и возврата полученного результата
   String _resp = "";                                              // Переменная для хранения результата
   long _timeout = millis() + 10000;                               // Переменная для отслеживания таймаута (10 секунд)
-  while (!SIM800.available() &&  millis() < _timeout)  {};        // Ждем ответа или выдидаем таймаут в 10 секунд
+  while (!SIM800.available() &&  millis() < _timeout)  {};        // Ждем ответа или выжидаем таймаут в 10 секунд
   if (SIM800.available()) {                                       // Если есть, что считывать...
     _resp = SIM800.readString();                                  // ... считываем и запоминаем
   }
