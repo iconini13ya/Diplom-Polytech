@@ -54,7 +54,7 @@ void loop() {
  if(radio.available()){
   Serial.println("Что-то пришло ,читаю");
   radio.read(&callbackData, sizeof(callbackData));
-  if(callbackData[0]==0 && callbackData[1]!= 0){
+ if(callbackData[0]==0 && callbackData[1]!= 0){
     registerNewSensor();
   }  
 }

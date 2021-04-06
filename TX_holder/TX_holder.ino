@@ -37,39 +37,14 @@ sensorSettings mySensor;
 void setup() {
     Serial.begin(9600); //открываем порт для связи с ПК
     radioSetup();
-    readSensorSettings(mySensor);
-    Data[0]=mySensor.id;
-    Data[1]=mySensor.type;
-    Data[2]=0;
-    Serial.println("Уел на регистрацию");
-    if(Data[0] == 0)
-    {
-      while(radio.write(Data, sizeof(Data)) == false){
-         Serial.println("Пишу");
-         delay(50);
-        }
-      Serial.println("Начинаю слушать");
-      radio.startListening();
-      while(true){
-        if( radio.available() ){// Если в буфере имеются принятые данные, то ...
-        Serial.println("Читаю приходящую инфу");
-        radio.read(&callbackData, sizeof(callbackData));       // Читаем данные из буфера в массив myData указывая сколько всего байт может поместиться в массив.
-        if(callbackData[0]== Data[0] && callbackData[1]== Data[1]){
-          Serial.println("О, это все мне ?");
-          writeSensorSettings(callbackData[2],callbackData[3]);
-          Data[0]=callbackData[2];
-          Data[1]=callbackData[3];
-          Serial.print("Новый id"); Serial.println(Data[0]);
-          Serial.print("Новый type"); Serial.println( Data[1]);
-          radio.stopListening();
-          Serial.println("Перестал слушать");
-          break; 
-          }
-        } 
+    initSensor();
+    
+    if(Data[0] == 0){
+      bool registr=false;
+      do{
+        registr=registrateSensor();
+        }while(registr==false);
       }
-    }
-
-
 
 // clearSensorSettings();
 //for(int i =0; i<90; i++){
@@ -81,9 +56,9 @@ void setup() {
 }
 
 void loop() {
-  Serial.print("Новый id в цикле"); Serial.println(Data[0]);
-  Serial.print("Новый type в цикле"); Serial.println( Data[1]);
+
 }
+
 
 void radioSetup(){ //настройка радио модуля 
   radio.begin(); //активировать модуль
@@ -99,6 +74,12 @@ void radioSetup(){ //настройка радио модуля
   // при самой низкой скорости имеем самую высокую чувствительность и дальность!!
   radio.powerUp();         // начать работу
   radio.stopListening();   // не слушаем радиоэфир, мы передатчик
+  }
+void initSensor(){
+    readSensorSettings(mySensor);
+    Data[0]=mySensor.id;
+    Data[1]=mySensor.type;
+    Data[2]=0;
   }
   
 void clearSensorSettings(){
@@ -117,4 +98,55 @@ void writeSensorSettings(byte id, byte type){
   
 void readSensorSettings(sensorSettings& settings){
     eeprom_read_block((void*)&settings, 0, sizeof(settings));
+  }
+
+bool radioWasDelivered(){
+  bool _resp=false;
+  long _timeout = millis() + 4000;                                             // Переменная для отслеживания таймаута (10 секунд)
+  while (!_resp &&  millis() < _timeout)  {
+    _resp = radio.write(Data, sizeof(Data));
+    };                                                                         // Ждем ответа или выжидаем таймаут в 2 секунды
+  if (_resp) {                                                     // Если есть, что считывать...
+    return true;                                                               // ... считываем и запоминаем
+  }
+  else {                                                                       // Если пришел таймаут, то...
+    return false;                                                              // ... оповещаем об этом и...
+  }  
+}
+
+bool registrateSensor(){
+      if(radioWasDelivered()){
+        Serial.println("Сообщение доставлено");
+        Serial.println("Начинаю слушать");
+        radio.startListening();   
+        long _timeout = millis() + 5000;
+        while(!radio.available() && millis() < _timeout){}
+        if(radio.available()){
+            Serial.println("Что-то пришло, читаю");
+            radio.read(&callbackData, sizeof(callbackData));
+            if(callbackData[0]== Data[0] && callbackData[1]== Data[1]){
+              Serial.println("О, это мне !");
+              writeSensorSettings(callbackData[2],callbackData[3]);
+              Data[0]=callbackData[2];
+              Data[1]=callbackData[3];
+              Serial.print("Новый id"); Serial.println(Data[0]);
+              Serial.print("Новый type"); Serial.println( Data[1]);
+              radio.stopListening();
+              Serial.println("Перестал слушать");
+              return true;
+              }else{
+                Serial.println("Это не мне");
+                radio.stopListening();
+                return false;
+                }
+            }else{
+              Serial.println("Timeout........");
+              Serial.println("Не пришел обратный ответ");
+              radio.stopListening();
+              return false;
+              }
+        }else{
+          Serial.println("Сообщение не доставлено базе");
+          return false;
+          } 
   }
