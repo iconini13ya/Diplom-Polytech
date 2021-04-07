@@ -15,7 +15,8 @@
 #include "RF24.h"
 RF24 radio(9, 10);              // создать радио модуль на пинах 9 и 10
 #include "SoftwareSerial.h"     //библиотека для создания сериал порта на любом пине
-SoftwareSerial SIM800(2,3);     //создать сериал порт для прослушки на пинах 2,3
+SoftwareSerial SIM800(4,5);     //создать сериал порт для прослушки на пинах 2,3
+SoftwareSerial WIFI(2,3); //TX желтый RX зеленый
 //--------------------- БИБЛИОТЕКИ ---------------------
 
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
@@ -33,10 +34,14 @@ String _response = "";                                                          
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 
 void setup() {
+  WIFI.begin(9600);
   Serial.begin(9600);    //открываем порт для связи с ПК
   radioSetup();          //ф-я настройки радио модуля
   simSetup();            //ф-я настройки модуля sim800L
+  WIFI.listen();
+//  sendSMS("+79114540246","hi");
 
+//  sendSMS("+79520534351","hi");
 
 //  for(int i =0; i<200; i++){
 ////    writeNewSensorSettings(0,1,mySensor);
@@ -50,29 +55,27 @@ void setup() {
 
 int bustatus;
 void loop() {
- 
+
  if(radio.available()){
   Serial.println("Что-то пришло ,читаю");
   radio.read(&callbackData, sizeof(callbackData));
  if(callbackData[0]==0 && callbackData[1]!= 0){
     registerNewSensor();
-  }  
+  }   
 }
 
+ if(WIFI.available()){
+  Serial.println("Есть инфа с wifi");
+  String cash = WIFI.readString();
+  Serial.print("Phone is: ");
+  String phone = cash.substring(cash.indexOf(' ')+1,cash.length());
+  Serial.println(phone);
+  Serial.print("Command is: ");
+  cash.remove(cash.indexOf(' '));
+  Serial.println(cash);
+  }
 
-//
-//  if(Serial.available()){
-//    bustatus=Serial.parseInt();
-//    Serial.print(bustatus);
-//    switch(bustatus){
-//      case 2:
-//        Serial.print("Я на лоу");
-//        break;
-//      case 1:
-//        Serial.print("Я на хай");
-//        break;
-//      }
-//    }
+
 }
 
 void radioSetup() {                        // настройка радио модуля
@@ -101,8 +104,10 @@ void simSetup(){
 
 void sendSMS(String phone, String message)                      //ф-я отправки sms 
 {
+  SIM800.listen();
   sendATCommand("AT+CMGS=\"" + phone + "\"", true);             // Переходим в режим ввода текстового сообщения
   sendATCommand(message + "\r\n" + (String)((char)26), true);   // После текста отправляем перенос строки и Ctrl+Z
+  WIFI.listen();
 }
 
 void registerNewSensor(){
