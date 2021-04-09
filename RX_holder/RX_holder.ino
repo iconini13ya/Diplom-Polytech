@@ -39,21 +39,24 @@ void setup() {
   radioSetup();          //ф-я настройки радио модуля
   simSetup();            //ф-я настройки модуля sim800L
   WIFI.listen();
-//  sendSMS("+79114540246","hi");
 
-//  sendSMS("+79520534351","hi");
-
-//  for(int i =0; i<200; i++){
-////    writeNewSensorSettings(0,1,mySensor);
+  
+  
+  for(int i =0; i<50; i++){
+//    writeNewSensorSettings(0,1,mySensor);
 //    clearSensorById(i);
-////    delay(200);
-//   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
-//   delay(5);
-//  }
+//    delay(200);
+   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
+   delay(5);
+  }
+
+  Serial.println(getPhoneNumber(1));
 
 }
 
-int bustatus;
+String data;
+String additionalInfo;
+String command;
 void loop() {
 
  if(radio.available()){
@@ -64,16 +67,25 @@ void loop() {
   }   
 }
 
- if(WIFI.available()){
-  Serial.println("Есть инфа с wifi");
-  String cash = WIFI.readString();
-  Serial.print("Phone is: ");
-  String phone = cash.substring(cash.indexOf(' ')+1,cash.length());
-  Serial.println(phone);
-  Serial.print("Command is: ");
-  cash.remove(cash.indexOf(' '));
-  Serial.println(cash);
-  }
+// if(WIFI.available()){
+//  Serial.println("Есть инфа с wifi");
+//  data = WIFI.readString();
+//  if(data.substring(data.indexOf(' ')+1)!=""){
+//    additionalInfo = data.substring(data.indexOf(' ')+1,data.length());
+//    }
+//  data.remove(data.indexOf(' '));
+//  command = data; 
+//  if(command == "addMainPhoneNumber"){
+//    Serial.println("Команда на добавление главного номера телефона");
+//    writePhoneNumber(1,additionalInfo);
+//    }
+//    
+//  if(command == "deleteMainPhoneNumber"){
+//    Serial.println("Команда на удаление главного номера телефона");
+//    deletePhoneNumber(1);
+//    }
+//    
+//  }
 
 
 }
@@ -90,7 +102,6 @@ void radioSetup() {                        // настройка радио мо
   radio.setDataRate(SIG_SPEED);            // задаем скорость обмена
                                            // должна быть одинакова на приёмнике и передатчике!
                                            // при самой низкой скорости имеем самую высокую чувствительность и дальность!! (логично)
-
   radio.powerUp();                         // начать работу
   radio.startListening();                  // начинаем слушать эфир, мы приёмный модуль
 } 
@@ -210,35 +221,78 @@ void readSensorSettingsById(int id,Sensor& callbackData){         //ф-я выв
     }
   }
   
-void writeMainPhone(long phomeNumber){      //ф-я записи основонго номера телефона long поскольку int(16 бит) -32768 до 32767 и по этим причинам не подходит для номера телефона
-  int n=0;
-  for(int i=5;i>0;i--){
-//    Serial.println(i-n);
-//    Serial.println(phomeNumber%100);
-    delay(50);
-    eeprom_write_byte(n, phomeNumber%100);
-    delay(50);
-    n++;
-    phomeNumber/=100;
-//    Serial.println(n);
-//    Serial.println(phomeNumber);
+void writePhoneNumber(int phoneType, String Phone){      //ф-я записи номеров телефона long поскольку int(16 бит) -32768 до 32767 и по этим причинам не подходит для номера телефона. phoneType - Главный номер =1, дополнительный номер телефона =2; phomeNumber должен быть вида +79.........
+    Phone = Phone.substring(3);
+    long phomeNumber = Phone.toInt();
+    if(phoneType == 1){
+      int n=0;
+      for(int i=5;i>0;i--){
+      delay(50);
+      eeprom_write_byte(n, phomeNumber%100);
+      delay(50);
+      n++;
+      phomeNumber/=100;
     }
+      }else{
+          int n=0;
+          for(int i=5;i>0;i--){
+            delay(50);
+            eeprom_write_byte(n+5, phomeNumber%100);
+            delay(50);
+            n++;
+            phomeNumber/=100;
+            }
+        }
   }
-void writeAddPhone(long phomeNumber){           //ф-я записи вторичного номера телефона long поскольку int(16 бит) -32768 до 32767 и по этим причинам не подходит для номера телефона
-  int n=0;
-  for(int i=5;i>0;i--){
-//    Serial.println(i-n);
-//    Serial.println(phomeNumber%100);
-    delay(50);
-    eeprom_write_byte(n+5, phomeNumber%100);
-    delay(50);
-    n++;
-    phomeNumber/=100;
-//    Serial.println(n);
-//    Serial.println(phomeNumber);
+
+void deletePhoneNumber(int phoneType){      //ф-я удаления номеров телефона  phoneType - Главный номер =1, дополнительный номер телефона =2;
+  if(phoneType == 1){
+    for(int i=0;i<5;i++){
+      delay(10);
+      eeprom_write_byte(i, 255);
+      delay(10);
+      }
+    }else {
+        for(int i=5;i<10;i++){
+          delay(10);
+          eeprom_write_byte(i, 255);
+          delay(10);
+        }
+      }
+  }
+
+String getPhoneNumber(int phoneType){      //ф-я получения основонго номеров телефона phoneType - Главный номер =1, дополнительный номер телефона =2;
+  long readPhoneNumber=0;
+  String phoneNumber;
+  long mnozhitel=1;
+  if(phoneType == 1){
+    for(int i=0;i<5;i++){
+      delay(10);
+      readPhoneNumber = mnozhitel * eeprom_read_byte(i)   + readPhoneNumber ;
+      mnozhitel *= 100;
+      delay(10);
     }
+    }else{
+          for(int i=5;i<10;i++){
+            delay(10);
+            readPhoneNumber = mnozhitel * eeprom_read_byte(i)   + readPhoneNumber ;
+            mnozhitel *= 100;
+            delay(10);
+          }   
+      }
+          if(readPhoneNumber < 9999999){
+            phoneNumber = "+7900";
+            }else if (readPhoneNumber < 99999999){
+              phoneNumber = "+790";
+              }else{
+                phoneNumber = "+79";
+                }
+          phoneNumber += readPhoneNumber; 
+          return phoneNumber;
   }
-    
+  
+
+  
 String waitResponse() {                                           // Функция ожидания ответа и возврата полученного результата
   String _resp = "";                                              // Переменная для хранения результата
   long _timeout = millis() + 10000;                               // Переменная для отслеживания таймаута (10 секунд)

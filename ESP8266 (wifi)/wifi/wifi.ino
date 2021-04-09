@@ -6,9 +6,9 @@ const char* ssid = "MyESP";                             // Название Мо
 ESP8266WebServer HTTP(80);                              // Указываем порт Web-сервера (80) по дефолту
 
 String command;
-String commandAdd="AddPhoneNumber ";
-String commandDelete="DeletePhoneNumber ";
-int telnum=520534351;
+String commandAdd="addMainPhoneNumber ";
+String commandDelete="deleteMainPhoneNumber ";
+String Maintelnum= "+79003450674";
 int flag=1;
 void setup() 
 {
@@ -22,10 +22,10 @@ void setup()
   
   HTTP.on("/changeDiodStatus",[](){
     if(flag==1){
-      command=commandAdd + telnum;
+      command=commandAdd + Maintelnum;
       flag=2;
       }else{
-        command=commandDelete + telnum;
+        command=commandDelete;
         flag=1;
         }
     Serial.print(command);
