@@ -1,0 +1,39 @@
+.box4{
+    display: grid;
+    font-size: 4vw;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+}
+.box4 div{
+    margin-top: 40px;
+}
+.phoneLabel{
+    font-weight: bold;
+}
+.mainPhone{
+    display: grid;
+    margin-bottom: 20px;
+}
+.additionalPhone{
+    display: grid;
+    margin-top: 20px;
+}
+.box6{
+    display: grid;
+    font-size: 3vw;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+}
+.box6 input{
+    height: 30px;
+    width: 80%;
+    font-size: 20px;
+    text-align: center;
+}
+
+.box7{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
