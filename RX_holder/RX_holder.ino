@@ -31,61 +31,80 @@ struct Sensor {                                                                 
 };
 Sensor cashDataToSend;                                                          // кешевая переменная для отправки данных
 String _response = "";                                                          // Переменная для хранения ответа модуля sim800L
+String data;
+String additionalInfo;
+String command;
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 
 void setup() {
   WIFI.begin(9600);
   Serial.begin(9600);    //открываем порт для связи с ПК
   radioSetup();          //ф-я настройки радио модуля
-  simSetup();            //ф-я настройки модуля sim800L
+//  simSetup();            //ф-я настройки модуля sim800L
   WIFI.listen();
 
   
   
-  for(int i =0; i<50; i++){
-//    writeNewSensorSettings(0,1,mySensor);
-//    clearSensorById(i);
-//    delay(200);
-   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
-   delay(5);
-  }
+//  for(int i =0; i<50; i++){
+////    writeNewSensorSettings(0,1,mySensor);
+////    clearSensorById(i);
+////    delay(200);
+//   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
+//   delay(5);
+//  }
+//
+//  deletePhoneNumber(1);
+//  delay(100);
+//  Serial.println(getPhoneNumber(1));
 
-  Serial.println(getPhoneNumber(1));
+//    writePhoneNumber(1,"+79520534351");
 
 }
 
-String data;
-String additionalInfo;
-String command;
+
 void loop() {
 
- if(radio.available()){
-  Serial.println("Что-то пришло ,читаю");
-  radio.read(&callbackData, sizeof(callbackData));
- if(callbackData[0]==0 && callbackData[1]!= 0){
-    registerNewSensor();
-  }   
-}
+// if(radio.available()){
+//  Serial.println("Что-то пришло ,читаю");
+//  radio.read(&callbackData, sizeof(callbackData));
+// if(callbackData[0]==0 && callbackData[1]!= 0){
+//    registerNewSensor();
+//  }   
+//}
 
-// if(WIFI.available()){
-//  Serial.println("Есть инфа с wifi");
-//  data = WIFI.readString();
-//  if(data.substring(data.indexOf(' ')+1)!=""){
-//    additionalInfo = data.substring(data.indexOf(' ')+1,data.length());
-//    }
-//  data.remove(data.indexOf(' '));
-//  command = data; 
-//  if(command == "addMainPhoneNumber"){
-//    Serial.println("Команда на добавление главного номера телефона");
-//    writePhoneNumber(1,additionalInfo);
-//    }
-//    
-//  if(command == "deleteMainPhoneNumber"){
-//    Serial.println("Команда на удаление главного номера телефона");
-//    deletePhoneNumber(1);
-//    }
-//    
-//  }
+ if(WIFI.available()){
+  Serial.println("Есть инфа с wifi");
+  data = WIFI.readString();
+  Serial.println(data);
+  if(data.substring(data.indexOf(' ')+1)!=""){
+    additionalInfo = data.substring(data.indexOf(' ')+1,data.length());
+    }
+  data.remove(data.indexOf(' '));
+  command = data; 
+  if(command == "addMainPhoneNumber"){
+    Serial.println("Команда на добавление главного номера телефона");
+    writePhoneNumber(1,additionalInfo);
+    }
+    
+  if(command == "deleteMainPhoneNumber"){
+    Serial.println("Команда на удаление главного номера телефона");
+    deletePhoneNumber(1);
+    }
+
+    if(command == "deleteAdditionalPhoneNumber"){
+    Serial.println("Команда на удаление второго номера телефона");
+    deletePhoneNumber(2);
+    }
+    
+  if(command == "getTelephone"){
+  String s;
+  s= s + getPhoneNumber(1);
+  s = s + " ";
+  s = s + getPhoneNumber(2);
+  WIFI.print(s);
+  }
+    
+ }
 
 
 }
@@ -249,13 +268,13 @@ void deletePhoneNumber(int phoneType){      //ф-я удаления номер�
   if(phoneType == 1){
     for(int i=0;i<5;i++){
       delay(10);
-      eeprom_write_byte(i, 255);
+      eeprom_write_byte(i, 0);
       delay(10);
       }
     }else {
         for(int i=5;i<10;i++){
           delay(10);
-          eeprom_write_byte(i, 255);
+          eeprom_write_byte(i, 0);
           delay(10);
         }
       }
@@ -267,20 +286,19 @@ String getPhoneNumber(int phoneType){      //ф-я получения основ
   long mnozhitel=1;
   if(phoneType == 1){
     for(int i=0;i<5;i++){
-      delay(10);
       readPhoneNumber = mnozhitel * eeprom_read_byte(i)   + readPhoneNumber ;
       mnozhitel *= 100;
-      delay(10);
     }
     }else{
           for(int i=5;i<10;i++){
-            delay(10);
             readPhoneNumber = mnozhitel * eeprom_read_byte(i)   + readPhoneNumber ;
             mnozhitel *= 100;
-            delay(10);
           }   
       }
-          if(readPhoneNumber < 9999999){
+          if(readPhoneNumber < 1){
+            phoneNumber = "";
+            }
+          else if(readPhoneNumber < 9999999){
             phoneNumber = "+7900";
             }else if (readPhoneNumber < 99999999){
               phoneNumber = "+790";

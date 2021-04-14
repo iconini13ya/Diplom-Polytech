@@ -4,14 +4,9 @@
     grid-auto-rows: minmax(100px,auto);
     grid-row-gap: 1em;
 }
-.box1 {
-    grid-column-start: 1;
-    grid-column-end: 2;
-    grid-row-start: 1;
-    grid-row-end: 2;   
-}
+
 .box2 {
-    grid-column-start: 2;
+    grid-column-start: 1;
     grid-column-end: 3;
     grid-row-start: 1;
     grid-row-end: 2;
@@ -21,6 +16,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    padding-bottom: 20px;
 }
 .box2 div{
     font-size:4vw;
@@ -82,9 +78,27 @@ div.button7 {
     background: rgb(64,199,129);
     box-shadow: 0 -3px rgb(53,167,110) inset;
     transition: 0.2s;
+    height: 50%;
   } 
   div.button7:hover { background: rgb(53, 167, 110); }
   div.button7:active {
     background: rgb(33,147,90);
     box-shadow: 0 3px rgb(33,147,90) inset;
   }
+
+  div.menue {
+    display: inline-block;
+    color: white;
+    font-weight: 700;
+    text-decoration: none;
+    user-select: none;
+    padding: .5em 2em;
+    outline: none;
+    border: 2px solid;
+    border-radius: 1px;
+    transition: 0.2s;
+    height: 50%;
+    background-color: rgba(10, 10, 10, 0.178);
+  } 
+  div.menue:hover { background: rgba(255,255,255,.2); }
+  div.menue:active { background: white; }
