@@ -43,7 +43,9 @@ void setup() {
 //  simSetup();            //ф-я настройки модуля sim800L
   WIFI.listen();
 
-  
+//  sendSMS("+79520534351","Hi");
+
+//  writePhoneNumber(1,"+79520534351");
   
 //  for(int i =0; i<50; i++){
 ////    writeNewSensorSettings(0,1,mySensor);
@@ -63,14 +65,14 @@ void setup() {
 
 
 void loop() {
-
-// if(radio.available()){
-//  Serial.println("Что-то пришло ,читаю");
-//  radio.read(&callbackData, sizeof(callbackData));
-// if(callbackData[0]==0 && callbackData[1]!= 0){
-//    registerNewSensor();
-//  }   
-//}
+  
+ if(radio.available()){
+  Serial.println("Что-то пришло ,читаю");
+  radio.read(&callbackData, sizeof(callbackData));
+ if(callbackData[0]==0 && callbackData[1]!= 0){
+    registerNewSensor();
+  }   
+}
 
  if(WIFI.available()){
   Serial.println("Есть инфа с wifi");

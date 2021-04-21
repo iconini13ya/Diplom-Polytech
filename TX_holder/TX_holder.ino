@@ -12,6 +12,8 @@
 // при самой низкой скорости имеем самую высокую чувствительность и дальность!!
 // ВНИМАНИЕ!!! enableAckPayload (основаня функция отправки сообщений в ответ на полученные) НЕ РАБОТАЕТ НА СКОРОСТИ 250 kbps!
 #define SIG_SPEED RF24_1MBPS
+
+#define BUPin 3
 //--------------------- НАСТРОЙКИ ----------------------
 
 //--------------------- БИБЛИОТЕКИ ----------------------
@@ -23,6 +25,15 @@ RF24 radio(9, 10); // "создать" модуль на пинах 7 и 10
 //--------------------- БИБЛИОТЕКИ ----------------------
 
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
+int bounceTime = 50;          // задержка для подавления дребезга
+int doubleTime = 500;         // время, в течение которого нажатия можно считать двойным
+int i = 1;
+bool lastReading = false;  // флаг предыдущего состояния кнопки
+bool buttonMulti = false; // флаг состояния "множественное нажатие"
+long onTime = 0;              // переменная обработки временного интервала
+long lastSwitchTime = 0;      // переменная времени предыдущего переключения состояния
+boolean reading;
+
 
 byte address[][6] = {"1Node", "2Node", "3Node", "4Node", "5Node", "6Node"}; //возможные номера труб
 byte Data[3]; //массив для посылаемых данных [0] - ID датчика (берется из постоянной памяти), [1] - тип датчика , [2] - показания датчика 
@@ -35,6 +46,7 @@ sensorSettings mySensor;
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 
 void setup() {
+    pinMode(BUPin, INPUT_PULLUP);      // устанавливает режим работы - выход
     Serial.begin(9600); //открываем порт для связи с ПК
     radioSetup();
     initSensor();
@@ -47,17 +59,47 @@ void setup() {
       }
 
 // clearSensorSettings();
-//for(int i =0; i<90; i++){
-//
-//   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
-//   delay(5);
-//  }
+for(int i =0; i<10; i++){
+
+   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
+   delay(5);
+  }
   
 }
 
 void loop() {
+  reading = !digitalRead(BUPin);
+  // проверка нажатия
+  if (reading && !lastReading){
+    onTime = millis();
+  }
+  if (!reading && lastReading){
+    if (((millis() - onTime) > bounceTime)){
+      if ((millis() - lastSwitchTime) >= doubleTime){
+        lastSwitchTime = millis();
+        Serial.println("Аларм");
+        Serial.println(i);
+        i=1;
+       //обработка аларма
+      } else {
+        i++;
+        lastSwitchTime = millis();
+        buttonMulti = true;
+      }
+    }
+  }
+  
+  lastReading = reading;
 
+
+  if (buttonMulti && (millis() - lastSwitchTime) > doubleTime && i==3){
+    clearSensorSettings();
+    i=1;
+    Serial.println("Настройки очищены");
+  }
+  
 }
+
 
 
 void radioSetup(){ //настройка радио модуля 
