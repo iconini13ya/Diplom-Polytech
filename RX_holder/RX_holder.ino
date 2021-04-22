@@ -71,6 +71,11 @@ void loop() {
   radio.read(&callbackData, sizeof(callbackData));
  if(callbackData[0]==0 && callbackData[1]!= 0){
     registerNewSensor();
+ }else if (callbackData[2]!=0){
+  Serial.println("Аларм");
+  Serial.print("На датчике id= ");Serial.println(callbackData[0]);
+  Serial.print("С типом type = ");Serial.println(callbackData[1]);
+  Serial.print("Показание data = ");Serial.println(callbackData[2]);
   }   
 }
 

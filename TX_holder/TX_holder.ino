@@ -26,19 +26,13 @@ RF24 radio(9, 10); // "создать" модуль на пинах 7 и 10
 
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 int bounceTime = 50;          // задержка для подавления дребезга
-int doubleTime = 500;         // время, в течение которого нажатия можно считать двойным
-int i = 1;
-bool lastReading = false;  // флаг предыдущего состояния кнопки
-bool buttonMulti = false; // флаг состояния "множественное нажатие"
 long onTime = 0;              // переменная обработки временного интервала
-long lastSwitchTime = 0;      // переменная времени предыдущего переключения состояния
 boolean reading;
-
 
 byte address[][6] = {"1Node", "2Node", "3Node", "4Node", "5Node", "6Node"}; //возможные номера труб
 byte Data[3]; //массив для посылаемых данных [0] - ID датчика (берется из постоянной памяти), [1] - тип датчика , [2] - показания датчика 
 byte callbackData[4]; //массив принятых от Базы данных
-struct sensorSettings { //Переменная типа struct для зранения данных о датчике
+struct sensorSettings { //Переменная типа struct для хранения данных о датчике
     byte id;
     byte type;
   };
@@ -50,6 +44,16 @@ void setup() {
     Serial.begin(9600); //открываем порт для связи с ПК
     radioSetup();
     initSensor();
+    reading = !digitalRead(BUPin);
+    onTime = millis();
+    while (reading){
+      if((millis() - onTime)>4000){
+        clearSensorSettings();
+        Serial.print("Настройки Очищены");       
+        break;
+        }
+      reading = !digitalRead(BUPin);
+      }
     
     if(Data[0] == 0){
       bool registr=false;
@@ -58,7 +62,6 @@ void setup() {
         }while(registr==false);
       }
 
-// clearSensorSettings();
 for(int i =0; i<10; i++){
 
    Serial.print("Info "); Serial.println(eeprom_read_byte(i));
@@ -69,34 +72,13 @@ for(int i =0; i<10; i++){
 
 void loop() {
   reading = !digitalRead(BUPin);
-  // проверка нажатия
-  if (reading && !lastReading){
-    onTime = millis();
-  }
-  if (!reading && lastReading){
-    if (((millis() - onTime) > bounceTime)){
-      if ((millis() - lastSwitchTime) >= doubleTime){
-        lastSwitchTime = millis();
-        Serial.println("Аларм");
-        Serial.println(i);
-        i=1;
-       //обработка аларма
-      } else {
-        i++;
-        lastSwitchTime = millis();
-        buttonMulti = true;
-      }
+  onTime=millis();
+  if(reading){
+    Data[2]=reading;
+    radio.write(Data, sizeof(Data));
+    Serial.println("Отправил аларм");
+    delay(500);
     }
-  }
-  
-  lastReading = reading;
-
-
-  if (buttonMulti && (millis() - lastSwitchTime) > doubleTime && i==3){
-    clearSensorSettings();
-    i=1;
-    Serial.println("Настройки очищены");
-  }
   
 }
 
