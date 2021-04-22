@@ -40,7 +40,7 @@ void setup() {
   WIFI.begin(9600);
   Serial.begin(9600);    //открываем порт для связи с ПК
   radioSetup();          //ф-я настройки радио модуля
-//  simSetup();            //ф-я настройки модуля sim800L
+  simSetup();            //ф-я настройки модуля sim800L
   WIFI.listen();
 
 //  sendSMS("+79520534351","Hi");
@@ -73,9 +73,7 @@ void loop() {
     registerNewSensor();
  }else if (callbackData[2]!=0){
   Serial.println("Аларм");
-  Serial.print("На датчике id= ");Serial.println(callbackData[0]);
-  Serial.print("С типом type = ");Serial.println(callbackData[1]);
-  Serial.print("Показание data = ");Serial.println(callbackData[2]);
+  makeCall("+79520534351");
   }   
 }
 
@@ -138,6 +136,13 @@ void simSetup(){
   sendATCommand("AT", true);               //Настраиваем Sim модуль для общения (скорость)
   sendATCommand("AT+CMGF=1", true);        //Включаем функцию отправки сообщений
   }
+
+void makeCall(String phone)                      //ф-я отправки sms 
+{
+  SIM800.listen();
+  sendATCommand("ATD"+phone+";", false);
+  WIFI.listen();
+}  
 
 void sendSMS(String phone, String message)                      //ф-я отправки sms 
 {
