@@ -56,9 +56,9 @@ void handlePhone(){
      s.replace("@@P2@@", additionalPhone);
      server.send(200, "text/html", s);   
       } 
-      else {
-        server.send(200, "text/plain", "Oops, an error, please, refresh the page");   
-        }
+//      else {
+//        server.send(200, "text/plain", "Oops, an error, please, refresh the page");   
+//        }
   }
 
  void deleteMainPhone(){
