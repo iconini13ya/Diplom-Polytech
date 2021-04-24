@@ -14,7 +14,7 @@ void setup() {
  
   Serial.println("Connecting to ");
 
- 
+  Serial.println("<div ><div  >Главное меню</div><div  >Настройка телефона</div></div><div ><ol>   </ol>");
 
   WiFi.softAP(ssid);
  
@@ -36,8 +36,18 @@ void loop() {
 }
 
 void handleRoot() {
-  String s = MAIN_page;
-  server.send(200, "text/html", s);
+  Serial.print("getSensors");
+  String cashData;
+  long _timeout = millis() + 4000; 
+    while(!Serial.available() && millis() < _timeout){}
+    if(Serial.available()){
+      cashData = Serial.readString();
+      server.send(200, "text/plain", cashData);
+      }else{
+        server.send(200, "text/plain", "timeout...");
+        }
+//  String s = MAIN_page;
+//  server.send(200, "text/html", s);
 }
 
 void handlePhone(){

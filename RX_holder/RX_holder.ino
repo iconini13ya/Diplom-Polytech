@@ -40,13 +40,13 @@ void setup() {
   WIFI.begin(9600);
   Serial.begin(9600);    //открываем порт для связи с ПК
   radioSetup();          //ф-я настройки радио модуля
-  simSetup();            //ф-я настройки модуля sim800L
+//  simSetup();            //ф-я настройки модуля sim800L
   WIFI.listen();
 
 //  sendSMS("+79520534351","Hi");
 
 //  writePhoneNumber(1,"+79520534351");
-  
+
 //  for(int i =0; i<50; i++){
 ////    writeNewSensorSettings(0,1,mySensor);
 ////    clearSensorById(i);
@@ -60,7 +60,6 @@ void setup() {
 //  Serial.println(getPhoneNumber(1));
 
 //    writePhoneNumber(1,"+79520534351");
-
 }
 
 
@@ -107,6 +106,10 @@ void loop() {
   s = s + " ";
   s = s + getPhoneNumber(2);
   WIFI.print(s);
+  }
+
+  if(command == "getSensors"){
+  WIFI.print(parseSensors());
   }
     
  }
@@ -245,9 +248,10 @@ void writeNewSensorSettings(byte type, byte data, Sensor& CallbackData) { //ф-�
 }
 
 void readSensorSettingsById(int id,Sensor& callbackData){         //ф-я вывода данных о сенсое по id
-    for (int i =10;i<1000;i= i+3){
+    for (int i =10;i<500;i= i+3){
        if (eeprom_read_byte((uint8_t*)i) == id) {
         eeprom_read_block((void*)&callbackData, (int*)i, sizeof(callbackData));
+        break;
       }
     }
   }
@@ -349,3 +353,20 @@ String sendATCommand(String cmd, bool waiting) {
   }
   return _resp;                                 // Возвращаем результат. Пусто, если проблема
 }
+
+String parseSensors(){
+  Sensor cash;
+  int num=0;
+  String parsedSensors;
+  for (int i =1; i<=100; i++){
+    readSensorSettingsById(i,cash);
+    if(cash.id != 0){
+//      Serial.println(cashString.length());
+      parsedSensors = parsedSensors+" "+cash.id+" "+cash.type;
+      num +=2;
+      cash.id=0;
+      cash.type=0;
+      }
+    }
+    return parsedSensors;
+  }
