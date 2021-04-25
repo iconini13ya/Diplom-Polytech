@@ -36,18 +36,26 @@ void loop() {
 }
 
 void handleRoot() {
+  String s = MAIN_page;
+  String htmlResponse;
   Serial.print("getSensors");
   String cashData;
   long _timeout = millis() + 4000; 
-    while(!Serial.available() && millis() < _timeout){}
+    while(!Serial.available() && millis() < _timeout){yield();}
     if(Serial.available()){
       cashData = Serial.readString();
-      server.send(200, "text/plain", cashData);
+      while (cashData.length()){
+        htmlResponse = htmlResponse + "<tr><td>"+cashData.substring(cashData.indexOf(" ")+1,cashData.indexOf(" ")+2)+"</td>";
+        cashData.remove(cashData.indexOf(" "),2);
+        htmlResponse = htmlResponse + "<td>"+checkSensorType(cashData.substring(cashData.indexOf(" ")+1,cashData.indexOf(" ")+2))+"</td></tr>";
+        cashData.remove(cashData.indexOf(" "),2);
+        }
+        s.replace("@@Sensors@@", htmlResponse);
+        server.send(200, "text/html", s);
+//      server.send(200, "text/plain", htmlResponse);
       }else{
         server.send(200, "text/plain", "timeout...");
         }
-//  String s = MAIN_page;
-//  server.send(200, "text/html", s);
 }
 
 void handlePhone(){
@@ -55,17 +63,20 @@ void handlePhone(){
   String data;
   Serial.print("getTelephone");
   long _timeout = millis() + 4000; 
-  while(Serial.available() && millis() < _timeout){
+  while(!Serial.available() && millis() < _timeout){yield();} 
+   if (Serial.available()){
     data = Serial.readString();
-    } 
-    if (data != 0){
-     String additionalPhone = data.substring(data.indexOf(' ')+1,data.length());
-     data.remove(data.indexOf(' '));
-     String mainPhone = data;
-     s.replace("@@P1@@", mainPhone);
-     s.replace("@@P2@@", additionalPhone);
-     server.send(200, "text/html", s);   
-      } 
+    String additionalPhone = data.substring(data.indexOf(' ')+1,data.length());
+    data.remove(data.indexOf(' '));
+    String mainPhone = data;
+    s.replace("@@P1@@", mainPhone);
+    s.replace("@@P2@@", additionalPhone);
+    server.send(200, "text/html", s);  
+    } else {
+      server.send(200, "text/plain", "timeout...");
+      }
+ 
+      
 //      else {
 //        server.send(200, "text/plain", "Oops, an error, please, refresh the page");   
 //        }
@@ -83,4 +94,12 @@ void handlePhone(){
   long _timeout = millis() + 4000; 
   while(millis() < _timeout){} 
   handlePhone();
+  }
+ String checkSensorType(String type){
+  if(type == "1"){
+    return "Дверной звонок";
+    }
+  if (type == "2"){
+    return "Дыма";
+    }
   }

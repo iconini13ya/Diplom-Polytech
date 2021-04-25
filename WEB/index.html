@@ -46,7 +46,7 @@
     grid-column-end: 3;
     grid-row-start: 2;
     grid-row-end: 3;
-    text-align: center;
+
 }
 
 .box5{
@@ -109,6 +109,18 @@ div.button7 {
   } 
   div.menue:hover { background: rgba(255,255,255,.2); }
   div.menue:active { background: white; }
+  table{
+      margin: auto;
+  }
+  caption{
+      font-size: 20px;
+      margin-bottom: 10px;
+      font-weight: bold;
+  }
+  td{
+      border: 3px black solid;
+      padding: 5px;
+  }
     </style>
     <script>
         function gotoPhoneSettings() {
@@ -135,9 +147,22 @@ div.button7 {
             </div>
         </div>
         <div class="box4">
-            <ol>
-                
-            </ol>
+            <table>
+                <caption>Подключенные датчики</caption>
+                <thead>
+                    <tr>
+                        <th>
+                            ID датчика
+                        </th>
+                        <th>
+                            Тип датчика
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @@Sensors@@
+                </tbody>
+            </table>
         </div>
      </div>
 </body>
