@@ -341,6 +341,9 @@ div.button7 {
 .deleteButton:hover{
     cursor: default;
 }
+#obrazec{
+    font-size: 25px;
+}
     </style>
     <script>
         function gotoPhoneSettings() {
@@ -354,6 +357,24 @@ div.button7 {
         }
         function deleteAdditionalPhone(){
             document.location.href ="/deleteAdditionalPhone";  
+        }
+        function validPhone(Phonetype){
+            var re = /\+7\d{10}/;
+            if (Phonetype == "Main"){
+                var myPhone = document.getElementById('mainPhone').value;
+                var myForm = document.getElementById("mainForm");
+            }else{
+                var myPhone = document.getElementById('addPhone').value;
+                var myForm = document.getElementById("addForm");
+            }
+            var valid = re.test(myPhone);
+            if (valid) {
+                myForm.submit();
+            }
+            else {
+                document.getElementById("obrazec").style.color="red";
+            }
+            return valid;
         }
     </script>
 </head>
@@ -376,34 +397,37 @@ div.button7 {
                 <div class="phoneLabel">
                     Номера телефонов
                 </div>
+                <div id="obrazec">
+                    Введите номер телефона по образцу (+7..........)
+                </div>
         </div>
         <div class="box5">
 
         </div>
         <div class="box6">
-            <form action="mainPhoneNumber" class="mainPhone">
+            <form action="mainPhoneNumber" class="mainPhone" id="mainForm">
                 <div>
                     Основной номер телефона
                 </div>
                 <div>
-                    <input type="text" name="mainPhoneNumber" value="@@P1@@">
+                    <input id="mainPhone" type="text" name="mainPhoneNumber" value="@@P1@@">
                 </div>
                 <div class="box7">
-                    <input type="submit" value="Добавить">
+                    <input  value="Добавить" onclick="validPhone(`Main`)">  
                     <div class="deleteButton" onclick="deleteMainPhone()">
                         Удалить
                     </div>
                 </div>
             </form>
-            <form action="additionalPhoneNumber" class="additionalPhone">
+            <form action="additionalPhoneNumber" class="additionalPhone" id="addForm">
                 <div>
                     Дополнительный номер телефона
                 </div>
                 <div>
-                    <input type="text" name="additionalPhoneNumber" value="@@P2@@">
+                    <input id="addPhone" type="text" name="additionalPhoneNumber" value="@@P2@@">
                 </div>
                 <div class="box7">
-                    <input type="submit" value="Добавить">  
+                    <input  value="Добавить" onclick="validPhone(`Add`)">  
                     <div class="deleteButton" onclick="deleteAdditionalPhone()">
                         Удалить
                     </div>

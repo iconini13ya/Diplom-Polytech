@@ -28,6 +28,8 @@ void setup() {
   server.on("/phoneSettings", handlePhone);
   server.on("/deleteMainPhone", deleteMainPhone);
   server.on("/deleteAdditionalPhone", deleteAdditionalPhone);
+  server.on("/additionalPhoneNumber", addAdditionalPhone);
+  server.on("/mainPhoneNumber", addMainPhone);
 //  server.on("/mainPhoneNumber", !!!!);
 //  server.on("/additionalPhoneNumber", !!!!!!);
 }
@@ -85,14 +87,14 @@ void handlePhone(){
  void deleteMainPhone(){
   Serial.print("deleteMainPhoneNumber");
   long _timeout = millis() + 4000; 
-  while(millis() < _timeout){} 
+  while(millis() < _timeout){yield();} 
   handlePhone();
   }
 
  void deleteAdditionalPhone(){
   Serial.print("deleteAdditionalPhoneNumber");
   long _timeout = millis() + 4000; 
-  while(millis() < _timeout){} 
+  while(millis() < _timeout){yield();} 
   handlePhone();
   }
  String checkSensorType(String type){
@@ -102,4 +104,21 @@ void handlePhone(){
   if (type == "2"){
     return "Дыма";
     }
+  }
+
+void addMainPhone(){
+  String Phone = server.arg("mainPhoneNumber"); 
+  String dataToSend = "addMainPhoneNumber "+Phone;
+  Serial.print(dataToSend);
+  long _timeout = millis() + 4000; 
+  while(millis() < _timeout){yield();} 
+  handlePhone();
+  }
+  void addAdditionalPhone(){
+  String Phone = server.arg("additionalPhoneNumber"); 
+  String dataToSend = "addAdditionalPhoneNumber "+Phone;
+  Serial.print(dataToSend);
+  long _timeout = millis() + 4000; 
+  while(millis() < _timeout){yield();} 
+  handlePhone();
   }

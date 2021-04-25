@@ -87,8 +87,15 @@ void loop() {
   command = data; 
   if(command == "addMainPhoneNumber"){
     Serial.println("Команда на добавление главного номера телефона");
+    Serial.println(additionalInfo);
     writePhoneNumber(1,additionalInfo);
     }
+
+    if(command == "addAdditionalPhoneNumber"){
+    Serial.println("Команда на добавление дополнительного номера телефона");
+    Serial.println(additionalInfo);
+    writePhoneNumber(2,additionalInfo);
+    }  
     
   if(command == "deleteMainPhoneNumber"){
     Serial.println("Команда на удаление главного номера телефона");
