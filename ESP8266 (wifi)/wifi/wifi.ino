@@ -30,6 +30,7 @@ void setup() {
   server.on("/deleteAdditionalPhone", deleteAdditionalPhone);
   server.on("/additionalPhoneNumber", addAdditionalPhone);
   server.on("/mainPhoneNumber", addMainPhone);
+  server.on("/deleteSensor", deleteSensor);
 //  server.on("/mainPhoneNumber", !!!!);
 //  server.on("/additionalPhoneNumber", !!!!!!);
 }
@@ -46,10 +47,13 @@ void handleRoot() {
     while(!Serial.available() && millis() < _timeout){yield();}
     if(Serial.available()){
       cashData = Serial.readString();
+      Serial.flush();
       while (cashData.length()){
-        htmlResponse = htmlResponse + "<tr><td>"+cashData.substring(cashData.indexOf(" ")+1,cashData.indexOf(" ")+2)+"</td>";
+        String sensorId=cashData.substring(cashData.indexOf(" ")+1,cashData.indexOf(" ")+2);
+        htmlResponse = htmlResponse + "<tr><td><form id="+sensorId+" action=deleteSensor> <input type=text value="+sensorId+" name=deleteSensor readonly> </form> </td>";
         cashData.remove(cashData.indexOf(" "),2);
-        htmlResponse = htmlResponse + "<td>"+checkSensorType(cashData.substring(cashData.indexOf(" ")+1,cashData.indexOf(" ")+2))+"</td></tr>";
+        String sensorType = checkSensorType(cashData.substring(cashData.indexOf(" ")+1,cashData.indexOf(" ")+2));
+        htmlResponse = htmlResponse + "<td>"+ sensorType +"</td><td><div id="+sensorId+" class=button onclick=deleteSensor(this)>Удалить датчик</div></td></tr>";
         cashData.remove(cashData.indexOf(" "),2);
         }
         s.replace("@@Sensors@@", htmlResponse);
@@ -68,6 +72,7 @@ void handlePhone(){
   while(!Serial.available() && millis() < _timeout){yield();} 
    if (Serial.available()){
     data = Serial.readString();
+    Serial.flush();
     String additionalPhone = data.substring(data.indexOf(' ')+1,data.length());
     data.remove(data.indexOf(' '));
     String mainPhone = data;
@@ -121,4 +126,13 @@ void addMainPhone(){
   long _timeout = millis() + 4000; 
   while(millis() < _timeout){yield();} 
   handlePhone();
+  }
+
+void deleteSensor(){
+  String sensorId = server.arg("deleteSensor");
+  String dataToSend = "deleteSensor "+sensorId;
+  Serial.print(dataToSend);
+  long _timeout = millis() + 4000; 
+  while(millis() < _timeout){yield();} 
+  handleRoot();
   }

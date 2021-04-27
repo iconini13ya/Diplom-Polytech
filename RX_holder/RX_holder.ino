@@ -80,6 +80,7 @@ void loop() {
   Serial.println("Есть инфа с wifi");
   data = WIFI.readString();
   Serial.println(data);
+  Serial.flush();
   if(data.substring(data.indexOf(' ')+1)!=""){
     additionalInfo = data.substring(data.indexOf(' ')+1,data.length());
     }
@@ -91,32 +92,38 @@ void loop() {
     writePhoneNumber(1,additionalInfo);
     }
 
-    if(command == "addAdditionalPhoneNumber"){
+  if(command == "addAdditionalPhoneNumber"){
     Serial.println("Команда на добавление дополнительного номера телефона");
     Serial.println(additionalInfo);
     writePhoneNumber(2,additionalInfo);
-    }  
+  }  
     
   if(command == "deleteMainPhoneNumber"){
     Serial.println("Команда на удаление главного номера телефона");
     deletePhoneNumber(1);
     }
 
-    if(command == "deleteAdditionalPhoneNumber"){
+  if(command == "deleteAdditionalPhoneNumber"){
     Serial.println("Команда на удаление второго номера телефона");
     deletePhoneNumber(2);
-    }
+  }
     
   if(command == "getTelephone"){
   String s;
   s= s + getPhoneNumber(1);
   s = s + " ";
   s = s + getPhoneNumber(2);
+  Serial.println(s);
   WIFI.print(s);
   }
 
   if(command == "getSensors"){
   WIFI.print(parseSensors());
+  }
+  
+  if(command == "deleteSensor"){
+    Serial.println("Команда на удаление сенсора");
+    clearSensorById(additionalInfo.toInt());
   }
     
  }
