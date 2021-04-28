@@ -370,6 +370,7 @@ String sendATCommand(String cmd, bool waiting) {
 
 String parseSensors(){
   Sensor cash;
+  cash.id=0;
   int num=0;
   String parsedSensors;
   for (int i =1; i<=100; i++){
