@@ -11,7 +11,7 @@
 // должна быть одинакова на приёмнике и передатчике!
 // при самой низкой скорости имеем самую высокую чувствительность и дальность!!
 // ВНИМАНИЕ!!! enableAckPayload (основаня функция отправки сообщений в ответ на полученные) НЕ РАБОТАЕТ НА СКОРОСТИ 250 kbps!
-#define SIG_SPEED RF24_1MBPS
+#define SIG_SPEED RF24_250KBPS
 
 #define BUPin 3
 //--------------------- НАСТРОЙКИ ----------------------
@@ -44,40 +44,52 @@ void setup() {
     Serial.begin(9600); //открываем порт для связи с ПК
     radioSetup();
     initSensor();
-    reading = !digitalRead(BUPin);
-    onTime = millis();
-    while (reading){
-      if((millis() - onTime)>4000){
-        clearSensorSettings();
-        Serial.print("Настройки Очищены");       
-        break;
-        }
-      reading = !digitalRead(BUPin);
-      }
-    
-    if(Data[0] == 0){
-      bool registr=false;
-      do{
-        registr=registrateSensor();
-        }while(registr==false);
-      }
-
-for(int i =0; i<10; i++){
+    for(int i =0; i<10; i++){
 
    Serial.print("Info "); Serial.println(eeprom_read_byte(i));
    delay(5);
-  }
-  
+   }
+    reading = !digitalRead(BUPin);
+    onTime = millis();
+    delay(100);
+    while (reading){
+      if((millis() - onTime)> 4000 && mySensor.id == 0){
+      Serial.println("Пошел на регистрацию");   
+      bool registr=false;
+      do{
+        registr=registrateSensor();
+        break;
+        }while(registr==false);      
+        break;
+        }else if ((millis() - onTime)> 4000 && Data[0] != 0){ 
+              clearSensorSettings(); 
+              break;
+          }
+      reading = !digitalRead(BUPin);
+      }
+      
 }
 
 void loop() {
   reading = !digitalRead(BUPin);
   onTime=millis();
   if(reading){
+    radio.stopListening();
     Data[2]=reading;
     radio.write(Data, sizeof(Data));
     Serial.println("Отправил аларм");
-    delay(500);
+    delay(3000);
+    radio.startListening();
+    }
+    
+  if(radio.available()){
+    radio.read(&callbackData, sizeof(callbackData));
+    if(callbackData[0]== Data[0] && callbackData[1]== Data[1]){
+      if(callbackData[2]==0 && callbackData[3]==0){
+      Serial.println("Очистка данных");
+        clearSensorSettings();
+        }
+      }
     }
   
 }
@@ -97,13 +109,13 @@ void radioSetup(){ //настройка радио модуля
   // должна быть одинакова на приёмнике и передатчике!
   // при самой низкой скорости имеем самую высокую чувствительность и дальность!!
   radio.powerUp();         // начать работу
-  radio.stopListening();   // не слушаем радиоэфир, мы передатчик
+  radio.startListening();
   }
 void initSensor(){
     readSensorSettings(mySensor);
     Data[0]=mySensor.id;
     Data[1]=mySensor.type;
-    Data[2]=0;
+    Data[2]=0; 
   }
   
 void clearSensorSettings(){
@@ -139,6 +151,8 @@ bool radioWasDelivered(){
 }
 
 bool registrateSensor(){
+      radio.stopListening();
+      delay(100);
       if(radioWasDelivered()){
         Serial.println("Сообщение доставлено");
         Serial.println("Начинаю слушать");
@@ -155,18 +169,15 @@ bool registrateSensor(){
               Data[1]=callbackData[3];
               Serial.print("Новый id"); Serial.println(Data[0]);
               Serial.print("Новый type"); Serial.println( Data[1]);
-              radio.stopListening();
               Serial.println("Перестал слушать");
               return true;
               }else{
                 Serial.println("Это не мне");
-                radio.stopListening();
                 return false;
                 }
             }else{
               Serial.println("Timeout........");
               Serial.println("Не пришел обратный ответ");
-              radio.stopListening();
               return false;
               }
         }else{

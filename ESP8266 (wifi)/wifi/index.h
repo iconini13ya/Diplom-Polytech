@@ -157,6 +157,12 @@ input:hover{
     grid-row-end: 4;
 }
 
+.noSensors{
+    font-size: 25px;
+    font-weight: bold;
+    text-align: center;
+}
+
     </style>
     <script>
         function gotoPhoneSettings() {

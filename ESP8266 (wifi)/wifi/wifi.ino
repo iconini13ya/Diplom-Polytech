@@ -60,7 +60,10 @@ void handleRoot() {
         server.send(200, "text/html", s);
 //      server.send(200, "text/plain", htmlResponse);
       }else{
-        server.send(200, "text/plain", "timeout...");
+        htmlResponse="<tr><td></td><td class=noSensors>Датчиков не найдено</td><td></td></tr>";
+        s.replace("@@Sensors@@", htmlResponse);
+        server.send(200, "text/html", s);
+//        server.send(200, "text/plain", "timeout...");
         }
 }
 

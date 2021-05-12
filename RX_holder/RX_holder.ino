@@ -7,7 +7,7 @@
 
 // СКОРОСТЬ ОБМЕНА ДАННЫМИ
 // должна быть одинакова на приёмнике и передатчике!
-#define SIG_SPEED RF24_1MBPS
+#define SIG_SPEED RF24_250KBPS
 //--------------------- НАСТРОЙКИ ----------------------
 
 //--------------------- БИБЛИОТЕКИ ---------------------
@@ -40,11 +40,9 @@ void setup() {
   WIFI.begin(9600);
   Serial.begin(9600);    //открываем порт для связи с ПК
   radioSetup();          //ф-я настройки радио модуля
-//  simSetup();            //ф-я настройки модуля sim800L
+  simSetup();            //ф-я настройки модуля sim800L
   WIFI.listen();
-
 //  sendSMS("+79520534351","Hi");
-
 //  writePhoneNumber(1,"+79520534351");
 
 //  for(int i =0; i<50; i++){
@@ -68,12 +66,16 @@ void loop() {
  if(radio.available()){
   Serial.println("Что-то пришло ,читаю");
   radio.read(&callbackData, sizeof(callbackData));
+  readSensorSettingsById(callbackData[0],cashDataToSend);
+  delay(100);
  if(callbackData[0]==0 && callbackData[1]!= 0){
     registerNewSensor();
- }else if (callbackData[2]!=0){
+ }else if (cashDataToSend.id == callbackData[0] && cashDataToSend.type == callbackData[1]){
   Serial.println("Аларм");
-  makeCall("+79520534351");
-  }   
+  makeCall(getPhoneNumber(1));
+  }else{
+    Serial.println("Не мой сенсор");
+    }
 }
 
  if(WIFI.available()){
@@ -123,7 +125,24 @@ void loop() {
   
   if(command == "deleteSensor"){
     Serial.println("Команда на удаление сенсора");
+    radio.stopListening();
+    readSensorSettingsById(additionalInfo.toInt(),cashDataToSend);
     clearSensorById(additionalInfo.toInt());
+    Data[0]= cashDataToSend.id;
+    Data[1]= cashDataToSend.type;
+    Data[2]= 0;
+    Data[3]= 0;
+    Serial.println(Data[0]);
+    Serial.println(Data[1]);
+        if (waitRadioResponse()){
+          Serial.println("Отправил, удачное удаление датчика");  
+          radio.startListening();
+          Serial.println("Начинаю слушать");
+      }else{
+          Serial.println("Не достучался до датчика,но удалил");  
+          radio.startListening();
+        }
+         
   }
     
  }
