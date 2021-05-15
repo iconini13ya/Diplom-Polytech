@@ -11,16 +11,8 @@ ESP8266WebServer server(80);
 void setup() {
   Serial.begin(9600);
   delay(100);
- 
-  Serial.println("Connecting to ");
-
-  Serial.println("<div ><div  >Главное меню</div><div  >Настройка телефона</div></div><div ><ol>   </ol>");
-
   WiFi.softAP(ssid);
- 
-
 //  Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
- 
   server.begin();
   Serial.println("HTTP server started");
 
@@ -46,8 +38,9 @@ void handleRoot() {
   long _timeout = millis() + 4000; 
     while(!Serial.available() && millis() < _timeout){yield();}
     if(Serial.available()){
+      delay(5);
       cashData = Serial.readString();
-      Serial.flush();
+      delay(5);
       while (cashData.length()){
         String sensorId=cashData.substring(cashData.indexOf(" ")+1,cashData.indexOf(" ")+2);
         htmlResponse = htmlResponse + "<tr><td><form id="+sensorId+" action=deleteSensor> <input type=text value="+sensorId+" name=deleteSensor readonly> </form> </td>";

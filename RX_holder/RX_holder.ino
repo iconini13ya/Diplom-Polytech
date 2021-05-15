@@ -34,6 +34,7 @@ String _response = "";                                                          
 String data;
 String additionalInfo;
 String command;
+long _timerefreshSIM;
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 
 void setup() {
@@ -42,6 +43,8 @@ void setup() {
   radioSetup();          //ф-я настройки радио модуля
   simSetup();            //ф-я настройки модуля sim800L
   WIFI.listen();
+  delay(10);
+  _timerefreshSIM = millis() + 300000;
 //  sendSMS("+79520534351","Hi");
 //  writePhoneNumber(1,"+79520534351");
 
@@ -62,6 +65,10 @@ void setup() {
 
 
 void loop() {
+  if (millis() > _timerefreshSIM){
+    simSetup();
+    _timerefreshSIM = millis() + 300000;
+    }
   
  if(radio.available()){
   Serial.println("Что-то пришло ,читаю");
@@ -72,17 +79,22 @@ void loop() {
     registerNewSensor();
  }else if (cashDataToSend.id == callbackData[0] && cashDataToSend.type == callbackData[1]){
   Serial.println("Аларм");
-  makeCall(getPhoneNumber(1));
-  }else{
-    Serial.println("Не мой сенсор");
-    }
+  String otvet = "Srabotal datchik ";
+  if (callbackData[1] == 1){
+    otvet = otvet+"zvonok";
+    }else if (callbackData[1]==2){
+      otvet = otvet+"dim";
+      }
+  sendSMS(getPhoneNumber(2),otvet);
+//  makeCall(getPhoneNumber(1));
+  }   
 }
 
  if(WIFI.available()){
   Serial.println("Есть инфа с wifi");
   data = WIFI.readString();
+  delay(10);
   Serial.println(data);
-  Serial.flush();
   if(data.substring(data.indexOf(' ')+1)!=""){
     additionalInfo = data.substring(data.indexOf(' ')+1,data.length());
     }
@@ -110,7 +122,7 @@ void loop() {
     deletePhoneNumber(2);
   }
     
-  if(command == "getTelephone"){
+  if(command == "getTelephone" || command == "getTelephone " ){
   String s;
   s= s + getPhoneNumber(1);
   s = s + " ";
@@ -120,7 +132,10 @@ void loop() {
   }
 
   if(command == "getSensors"){
+  Serial.println("Отправил");
+  Serial.println(parseSensors());
   WIFI.print(parseSensors());
+  
   }
   
   if(command == "deleteSensor"){
@@ -167,25 +182,33 @@ void radioSetup() {                        // настройка радио мо
 } 
 
 void simSetup(){
-  SIM800.begin(9600);                      //Скорость порта для связи Arduino с GSM модемом    
-  delay(100);
+  SIM800.begin(9600);                      //Скорость порта для связи Arduino с GSM модемом  
+  SIM800.listen();  
+  delay(10);
   sendATCommand("AT", true);               //Настраиваем Sim модуль для общения (скорость)
   sendATCommand("AT+CMGF=1", true);        //Включаем функцию отправки сообщений
+  delay(10);
+  WIFI.listen();
+  delay(10);
   }
 
 void makeCall(String phone)                      //ф-я отправки sms 
 {
   SIM800.listen();
+  delay(10);
   sendATCommand("ATD"+phone+";", false);
   WIFI.listen();
+  delay(10);
 }  
 
 void sendSMS(String phone, String message)                      //ф-я отправки sms 
 {
   SIM800.listen();
+  delay(10);
   sendATCommand("AT+CMGS=\"" + phone + "\"", true);             // Переходим в режим ввода текстового сообщения
   sendATCommand(message + "\r\n" + (String)((char)26), true);   // После текста отправляем перенос строки и Ctrl+Z
   WIFI.listen();
+  delay(10);
 }
 
 void registerNewSensor(){
