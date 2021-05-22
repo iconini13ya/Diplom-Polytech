@@ -7,7 +7,7 @@
 
 // СКОРОСТЬ ОБМЕНА ДАННЫМИ
 // должна быть одинакова на приёмнике и передатчике!
-#define SIG_SPEED RF24_250KBPS
+#define SIG_SPEED RF24_1MBPS
 //--------------------- НАСТРОЙКИ ----------------------
 
 //--------------------- БИБЛИОТЕКИ ---------------------
@@ -47,14 +47,14 @@ void setup() {
   _timerefreshSIM = millis() + 300000;
 //  sendSMS("+79520534351","Hi");
 //  writePhoneNumber(1,"+79520534351");
-
-//  for(int i =0; i<50; i++){
-////    writeNewSensorSettings(0,1,mySensor);
-////    clearSensorById(i);
-////    delay(200);
-//   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
-//   delay(5);
-//  }
+//
+  for(int i =0; i<50; i++){
+//    writeNewSensorSettings(0,1,mySensor);
+    clearSensorById(i);
+//    delay(200);
+   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
+   delay(5);
+  }
 //
 //  deletePhoneNumber(1);
 //  delay(100);
@@ -77,18 +77,32 @@ void loop() {
   delay(100);
  if(callbackData[0]==0 && callbackData[1]!= 0){
     registerNewSensor();
+      for(int i =0; i<50; i++){
+//    writeNewSensorSettings(0,1,mySensor);
+//    clearSensorById(i);
+//    delay(200);
+   Serial.print("Info "); Serial.println(eeprom_read_byte(i));
+   delay(5);
+  }
  }else if (cashDataToSend.id == callbackData[0] && cashDataToSend.type == callbackData[1]){
   Serial.println("Аларм");
+  Serial.println(callbackData[0]);
+  Serial.println(callbackData[1]);
   String otvet = "Srabotal datchik ";
   if (callbackData[1] == 1){
     otvet = otvet+"zvonok";
     }else if (callbackData[1]==2){
       otvet = otvet+"dim";
       }
+  Serial.println(otvet);  
+  delay(20);  
   sendSMS(getPhoneNumber(2),otvet);
+  delay(20);
 //  makeCall(getPhoneNumber(1));
   }   
-}
+}else{
+  radio.flush_tx();
+  }
 
  if(WIFI.available()){
   Serial.println("Есть инфа с wifi");
@@ -184,31 +198,31 @@ void radioSetup() {                        // настройка радио мо
 void simSetup(){
   SIM800.begin(9600);                      //Скорость порта для связи Arduino с GSM модемом  
   SIM800.listen();  
-  delay(10);
+  delay(20);
   sendATCommand("AT", true);               //Настраиваем Sim модуль для общения (скорость)
   sendATCommand("AT+CMGF=1", true);        //Включаем функцию отправки сообщений
-  delay(10);
+  delay(20);
   WIFI.listen();
-  delay(10);
+  delay(20);
   }
 
 void makeCall(String phone)                      //ф-я отправки sms 
 {
   SIM800.listen();
-  delay(10);
+  delay(20);
   sendATCommand("ATD"+phone+";", false);
   WIFI.listen();
-  delay(10);
+  delay(20);
 }  
 
 void sendSMS(String phone, String message)                      //ф-я отправки sms 
 {
   SIM800.listen();
-  delay(10);
+  delay(20);
   sendATCommand("AT+CMGS=\"" + phone + "\"", true);             // Переходим в режим ввода текстового сообщения
   sendATCommand(message + "\r\n" + (String)((char)26), true);   // После текста отправляем перенос строки и Ctrl+Z
   WIFI.listen();
-  delay(10);
+  delay(20);
 }
 
 void registerNewSensor(){

@@ -1,4 +1,4 @@
-// ЭТО СКЕТЧ Датчика - кнопки !!!
+// ЭТО СКЕТЧ Датчика дыма !!!
 //--------------------- НАСТРОЙКИ ----------------------
 #define CH_NUM 0x60   // номер канала (должен совпадать с приёмником)
 
@@ -13,7 +13,7 @@
 // ВНИМАНИЕ!!! enableAckPayload (основаня функция отправки сообщений в ответ на полученные) НЕ РАБОТАЕТ НА СКОРОСТИ 250 kbps!
 #define SIG_SPEED RF24_1MBPS
 
-#define BUPin 3
+
 //--------------------- НАСТРОЙКИ ----------------------
 
 //--------------------- БИБЛИОТЕКИ ----------------------
@@ -25,10 +25,9 @@ RF24 radio(9, 10); // "создать" модуль на пинах 7 и 10
 //--------------------- БИБЛИОТЕКИ ----------------------
 
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
-int bounceTime = 50;          // задержка для подавления дребезга
-long onTime = 0;              // переменная обработки временного интервала
-boolean reading;
-
+boolean alarmFlag=false;
+int resetPin = A6;
+int alarmPin = A5;
 byte address[][6] = {"1Node", "2Node", "3Node", "4Node", "5Node", "6Node"}; //возможные номера труб
 byte Data[3]; //массив для посылаемых данных [0] - ID датчика (берется из постоянной памяти), [1] - тип датчика , [2] - показания датчика 
 byte callbackData[4]; //массив принятых от Базы данных
@@ -37,55 +36,46 @@ struct sensorSettings { //Переменная типа struct для хране
     byte type;
   };
 sensorSettings mySensor;
+
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 
 void setup() {
-    pinMode(BUPin, INPUT_PULLUP);      // устанавливает режим работы - выход
-    Serial.begin(9600); //открываем порт для связи с ПК
+    Serial.begin(9600);
     radioSetup();
     initSensor();
     for(int i =0; i<10; i++){
-
    Serial.print("Info "); Serial.println(eeprom_read_byte(i));
    delay(5);
    }
-    reading = !digitalRead(BUPin);
-    onTime = millis();
-    delay(100);
-    bool registr=false;
-    while (reading){
-      if((millis() - onTime)> 4000 && mySensor.id == 0){
-      Serial.println("Пошел на регистрацию");   
-      registr=registrateSensor();
-      break;
-        }else if ((millis() - onTime)> 4000 && Data[0] != 0){ 
-              clearSensorSettings(); 
-              while(true){
-                Serial.println("Перезапустите устройство");
-              }
-          }
-      reading = !digitalRead(BUPin);
-      }
-      
-     if (registr==true){
+   if (analogRead(resetPin)>1000){
+    clearSensorSettings();
       while(true){
-        Serial.println("Перезапустите устройство");
-        }
-     } 
+       Serial.println("Была произведена очистка памяти устройства. Поменяйте распололжение свича и перезагрузите устройство");
+       delay(1000);
+      }
+    }
+    delay(100);
+      if(mySensor.id == 0){
+      Serial.println("Пошел на регистрацию");   
+      bool registr=false;
+      do{
+        registr=registrateSensor();
+        }while(registr==false);      
+        }   
 }
 
 void loop() {
-  reading = !digitalRead(BUPin);
-  onTime=millis();
-  if(reading && Data[0]!=0){
+  if(digitalRead(alarmPin)==1 && alarmFlag==false){
+    alarmFlag=true;
     radio.stopListening();
-    Data[2]=reading;
+    Data[2]=digitalRead(alarmPin);
     radio.write(Data, sizeof(Data));
     Serial.println("Отправил аларм");
-    delay(3000);
+    delay(200);
     radio.startListening();
-    }
-    
+    }else if (digitalRead(alarmPin)==0){
+      alarmFlag=false;
+      }  
   if(radio.available()){
     radio.read(&callbackData, sizeof(callbackData));
     if(callbackData[0]== Data[0] && callbackData[1]== Data[1]){
@@ -125,7 +115,7 @@ void initSensor(){
 void clearSensorSettings(){
     sensorSettings mySensor; //объявление переменной mySensor
     mySensor.id=0; //задание поля id значение 255 (по дефолту все поля EEPROM =255)
-    mySensor.type=1; //задание поля type значение 255 (по дефолту все поля EEPROM =255)
+    mySensor.type=2; //задание поля type значение 255 (по дефолту все поля EEPROM =255)
     eeprom_write_block((void*)&mySensor, 0, sizeof(mySensor)); //запись переменной mySensor в поле 0. в поле 1 также появится запись (type) поскольку каждая ячейка eeprom хранит только 1 байт информации.
   }
   
@@ -145,8 +135,6 @@ bool radioWasDelivered(){
   long _timeout = millis() + 4000;                                             // Переменная для отслеживания таймаута (10 секунд)
   while (!_resp &&  millis() < _timeout)  {
     _resp = radio.write(Data, sizeof(Data));
-    delay(100);
-    Serial.println("Otpravil");
     };                                                                         // Ждем ответа или выжидаем таймаут в 2 секунды
   if (_resp) {                                                     // Если есть, что считывать...
     return true;                                                               // ... считываем и запоминаем
