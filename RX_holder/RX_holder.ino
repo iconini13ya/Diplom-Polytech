@@ -34,7 +34,7 @@ String _response = "";                                                          
 String data;
 String additionalInfo;
 String command;
-long _timerefreshSIM;
+String otvet;
 //--------------------- ПЕРЕМЕННЫЕ ----------------------
 
 void setup() {
@@ -44,13 +44,12 @@ void setup() {
   simSetup();            //ф-я настройки модуля sim800L
   WIFI.listen();
   delay(10);
-  _timerefreshSIM = millis() + 300000;
 //  sendSMS("+79520534351","Hi");
 //  writePhoneNumber(1,"+79520534351");
 //
   for(int i =0; i<50; i++){
 //    writeNewSensorSettings(0,1,mySensor);
-    clearSensorById(i);
+//    clearSensorById(i);
 //    delay(200);
    Serial.print("Info "); Serial.println(eeprom_read_byte(i));
    delay(5);
@@ -61,15 +60,13 @@ void setup() {
 //  Serial.println(getPhoneNumber(1));
 
 //    writePhoneNumber(1,"+79520534351");
+pinMode(A0, OUTPUT);
+analogWrite(A0,255);
 }
 
+void(* resetFunc) (void) = 0;
 
-void loop() {
-  if (millis() > _timerefreshSIM){
-    simSetup();
-    _timerefreshSIM = millis() + 300000;
-    }
-  
+void loop() { 
  if(radio.available()){
   Serial.println("Что-то пришло ,читаю");
   radio.read(&callbackData, sizeof(callbackData));
@@ -85,19 +82,29 @@ void loop() {
    delay(5);
   }
  }else if (cashDataToSend.id == callbackData[0] && cashDataToSend.type == callbackData[1]){
+  otvet="";
   Serial.println("Аларм");
   Serial.println(callbackData[0]);
   Serial.println(callbackData[1]);
-  String otvet = "Srabotal datchik ";
+  otvet = "Srabotal datchik ";
   if (callbackData[1] == 1){
     otvet = otvet+"zvonok";
     }else if (callbackData[1]==2){
       otvet = otvet+"dim";
       }
   Serial.println(otvet);  
-  delay(20);  
-  sendSMS(getPhoneNumber(2),otvet);
   delay(20);
+  simSetup();
+  sendSMS(getPhoneNumber(2),otvet);  
+  simSetup();
+  delay(200);
+  sendSMS(getPhoneNumber(1),otvet);
+  delay(2000);
+  analogWrite(A0,0);
+  delay(10);
+  analogWrite(A0,255);
+  delay(1000);
+  resetFunc();
 //  makeCall(getPhoneNumber(1));
   }   
 }else{
@@ -118,12 +125,24 @@ void loop() {
     Serial.println("Команда на добавление главного номера телефона");
     Serial.println(additionalInfo);
     writePhoneNumber(1,additionalInfo);
+    delay(4000);
+      analogWrite(A0,0);
+  delay(10);
+  analogWrite(A0,255);
+  delay(1000);
+    resetFunc();
     }
 
   if(command == "addAdditionalPhoneNumber"){
     Serial.println("Команда на добавление дополнительного номера телефона");
     Serial.println(additionalInfo);
     writePhoneNumber(2,additionalInfo);
+    delay(2000);
+       analogWrite(A0,0);
+  delay(10);
+  analogWrite(A0,255);
+  delay(1000);
+    resetFunc();
   }  
     
   if(command == "deleteMainPhoneNumber"){
@@ -198,31 +217,31 @@ void radioSetup() {                        // настройка радио мо
 void simSetup(){
   SIM800.begin(9600);                      //Скорость порта для связи Arduino с GSM модемом  
   SIM800.listen();  
-  delay(20);
+  delay(100);
   sendATCommand("AT", true);               //Настраиваем Sim модуль для общения (скорость)
   sendATCommand("AT+CMGF=1", true);        //Включаем функцию отправки сообщений
-  delay(20);
+  delay(100);
   WIFI.listen();
-  delay(20);
+  delay(100);
   }
 
 void makeCall(String phone)                      //ф-я отправки sms 
 {
   SIM800.listen();
-  delay(20);
+  delay(100);
   sendATCommand("ATD"+phone+";", false);
   WIFI.listen();
-  delay(20);
+  delay(100);
 }  
 
 void sendSMS(String phone, String message)                      //ф-я отправки sms 
 {
   SIM800.listen();
-  delay(20);
+  delay(100);
   sendATCommand("AT+CMGS=\"" + phone + "\"", true);             // Переходим в режим ввода текстового сообщения
   sendATCommand(message + "\r\n" + (String)((char)26), true);   // После текста отправляем перенос строки и Ctrl+Z
   WIFI.listen();
-  delay(20);
+  delay(100);
 }
 
 void registerNewSensor(){

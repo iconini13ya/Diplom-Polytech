@@ -135,6 +135,7 @@ bool radioWasDelivered(){
   long _timeout = millis() + 4000;                                             // Переменная для отслеживания таймаута (10 секунд)
   while (!_resp &&  millis() < _timeout)  {
     _resp = radio.write(Data, sizeof(Data));
+    delay(100);
     };                                                                         // Ждем ответа или выжидаем таймаут в 2 секунды
   if (_resp) {                                                     // Если есть, что считывать...
     return true;                                                               // ... считываем и запоминаем
